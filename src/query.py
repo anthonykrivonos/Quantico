@@ -12,6 +12,11 @@ from enum import Enum
 
 from Robinhood import Robinhood
 
+# Bounds Enum
+class Bounds(Enum):
+    REGULAR = 'regular'     # regular bounds
+    EXTENDED = 'extended'   # extended bounds
+
 # Option Enum
 class Option(Enum):
     CALL = "call" # "call" order
@@ -22,15 +27,23 @@ class Time(Enum):
     GOOD_FOR_DAY = "GFD"        # "GFD" time
     GOOD_TIL_CANCELED = "GTC"   # "GTC" time
 
+# Time Enum
+class Span(Enum):
+    FIVE_MINUTE = "5minute"   # Five minute's time
+    TEN_MINUTE = "10minute"   # Ten minute's time
+    DAY = "day"               # 24 hours' time
+    WEEK = "week"             # 7 days' time
+    YEAR = "year"             # 365 days' time
+
 # Query Class
 class Query:
 
     # __init__:Void
-    # param username:String => Username of the Robinhood user.
+    # param email:String => Email of the Robinhood user.
     # param password:String => Password for the Robinhood user.
-    def __init__(self, username, password):
+    def __init__(self, email, password):
         self.trader = Robinhood()
-        self.trader.login(username=username, password=password)
+        self.trader.login(username=email, password=password)
 
     ##           ##
     #   Getters   #
@@ -40,7 +53,7 @@ class Query:
     # param symbol:String => String symbol of the instrument to return.
     # returns Quote data for the instrument with the given symbol.
     def get_quote(self, symbol):
-        return self.trader.quote_data(symbol)[0] or None
+        return self.trader.quote_data(symbol)
 
     # get_quotes:[[String:String]]
     # param symbol:[String] => List of string symbols of the instrument to return.
@@ -57,9 +70,12 @@ class Query:
 
     # get_history:[[String:String]]
     # param symbol:String => String symbol of the instrument.
+    # param interval:Span => Time in between each value. (default: DAY)
+    # param span:Span => Range for the data to be returned. (default: YEAR)
+    # param bounds:Span => The bounds to be included. (default: REGULAR)
     # returns Historical quote data for the instruments with the given symbols on a 5-minute, weekly interval.
-    def get_history(self, symbol):
-        return self.trader.quotes_data(symbol, "5minute", "week")
+    def get_history(self, symbol, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
+        return self.trader.get_historical_quotes(symbol, interval.value, span.value, bounds.value)
 
     # get_news:[[String:String]]
     # param symbol:String => String symbol of the instrument.
@@ -160,12 +176,12 @@ class Query:
     # param orderId:String => The order ID to return the order for.
     # returns A specified order executed by the logged in user.
     def user_order(self, orderId):
-        return self.trader.order_history(self, orderId)
+        return self.trader.order_history(orderId)
 
     # user_orders:[[String:String]]
     # returns The order history for the logged in user.
     def user_orders(self):
-        return self.trader.order_history(self, None)
+        return self.trader.order_history(None)
 
     ##                     ##
     #   Execution Methods   #

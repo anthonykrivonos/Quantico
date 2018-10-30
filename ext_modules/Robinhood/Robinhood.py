@@ -17,9 +17,8 @@ import six
 import dateutil
 
 #Application-specific imports
-import exceptions as RH_exception
-import endpoints
-
+from Robinhood import exceptions as RH_exception
+from Robinhood import endpoints
 
 class Bounds(Enum):
     """Enum for bounds in `historicals` endpoint """
@@ -113,7 +112,6 @@ class Robinhood:
 
         if mfa_code:
             payload['mfa_code'] = mfa_code
-
         try:
             res = self.session.post(endpoints.login(), data=payload, timeout=15)
             res.raise_for_status()
@@ -343,15 +341,10 @@ class Robinhood:
         if isinstance(bounds, str):  # recast to Enum
             bounds = Bounds(bounds)
 
-        data = {
-            'symbols': ','.join(stock).upper(),
-            'interval': interval,
-            'span': span,
-            'bounds': bounds.name.lower()
-        }
+        historicals = endpoints.historicals() + "/?symbols=" + ','.join(stock).upper() + "&interval=" + interval + "&span=" + span + "&bounds=" + bounds.name.lower()
 
-        res = self.session.get(endpoints.historicals(), data=data, timeout=15)
-        return res.json()
+        res = self.session.get(historicals, timeout=15)
+        return res.json()['results'][0]
 
 
     def get_news(self, stock):

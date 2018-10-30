@@ -4,23 +4,35 @@
 
 # Abstract: File with platform tests.
 
-# Imports
+# Global Imports
 import sys
 import os
 sys.path.append('src')
 
 # Start .env
 from os.path import join, dirname
-from dotenv import load_dotenv
-dotenv_path = join(dirname(__file__)+"/../", '.env')
-load_dotenv(dotenv_path)
+from dotenv import Dotenv
+dotenv = Dotenv(join(dirname(__file__)+"/../", '.env'))
+os.environ.update(dotenv)
 # End .env
 
+# Local Imports
 from query import *
+from utility import *
+
+# Plotting
+import numpy as np
 
 # Query Tests
-USERNAME = os.getenv("USERNAME")
+EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 
+# Helper
+
 # Initialize Query object with credentials from .env
-query = Query(USERNAME, PASSWORD)
+query = Query(EMAIL, PASSWORD)
+
+# Plotting Test
+stock = "CRMD"
+historicals = query.get_history(stock)
+Utility.plot_historicals(historicals, isCandleStick=True)
