@@ -33,7 +33,6 @@ PASSWORD = os.getenv("PASSWORD")
 query = Query(EMAIL, PASSWORD)
 
 # Plotting Test
-stock = "CRMD"
-query.exec_buy(stock, 1)
-# historicals = query.get_history(stock)
-# Utility.plot_historicals(historicals, isCandleStick=True)
+
+historicals = query.get_history(stock)
+Utility.plot_historicals(historicals, isCandleStick=True)
