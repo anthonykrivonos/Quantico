@@ -18,11 +18,11 @@ This project uses my fork of [Jamonek's](https://github.com/Jamonek/Robinhood) R
 3. Create a file called `.env` and input your credentials:
 
 ```
-USERNAME=yourEmail@probably.com
+EMAIL=yourEmail@probably.com
 PASSWORD=yourPassword123
 ```
 
-4. Run tests in the `tests/tests.py` file. It will use `dotenv` to load your `USERNAME` and `PASSWORD`, so you don't have to worry about hardcoding these credentials.
+4. Run tests in the `tests/tests.py` file. It will use `dotenv` to load your `EMAIL` and `PASSWORD`, so you don't have to worry about hardcoding these credentials.
 5. `cd` to `tests`. Start the tests script with `python tests.py`.
 
 As this project evolves, I will give users the option to run their algorithms on a REST server, as well as better constructed script files.
