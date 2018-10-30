@@ -34,5 +34,6 @@ query = Query(EMAIL, PASSWORD)
 
 # Plotting Test
 stock = "CRMD"
-historicals = query.get_history(stock)
-Utility.plot_historicals(historicals, isCandleStick=True)
+query.exec_buy(stock, 1)
+# historicals = query.get_history(stock)
+# Utility.plot_historicals(historicals, isCandleStick=True)
