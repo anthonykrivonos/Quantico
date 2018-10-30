@@ -16,7 +16,7 @@ dotenv_path = join(dirname(__file__)+"/../", '.env')
 load_dotenv(dotenv_path)
 # End .env
 
-from query import Query
+from query import *
 
 # Query Tests
 USERNAME = os.getenv("USERNAME")
