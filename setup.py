@@ -8,5 +8,5 @@ setup(name='Distutils',
     author='Anthony Krivonos',
     author_email='info@anthonykrivonos.com',
     url='https://github.com/anthonykrivonos/Quantico',
-    packages=['loadenv']
+    packages=['dotenv', 'numpy', 'mpl_finance', 'pandas_market_calendars']
 )

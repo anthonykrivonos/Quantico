@@ -19,6 +19,7 @@ os.environ.update(dotenv)
 # Local Imports
 from query import *
 from utility import *
+from nodaytrades import *
 
 # Plotting
 import numpy as np
@@ -34,5 +35,7 @@ query = Query(EMAIL, PASSWORD)
 
 # Plotting Test
 
-historicals = query.get_history(stock)
-Utility.plot_historicals(historicals, isCandleStick=True)
+# historicals = query.get_history("CRMD")
+# Utility.plot_historicals(historicals, isCandleStick=True)
+
+NoDayTradesAlgorithm(query)
