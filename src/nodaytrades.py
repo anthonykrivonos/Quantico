@@ -33,19 +33,31 @@ class NoDayTradesAlgorithm:
         print(open_hour)
         print(close_hour)
 
+        test = datetime.datetime.today() + datetime.timedelta(seconds=10)
+
+        print("executing in " + str(test))
+
+        # Utility.sleep_then_execute(time=test, secInterval=1, action=lambda: self.test())
+
+        Utility.execute_then_sleep(time=test, secInterval=1, action=lambda: self.test())
+
         # Execute event functions
-        Utility.sleep_then_execute(time=prior_hour, secInterval=60, action=lambda: self.market_will_open())
-        Utility.execute_then_sleep(time=open_hour, secInterval=60, action=lambda: self.on_market_open())
-        Utility.sleep_then_execute(time=close_hour, secInterval=60, action=lambda: self.on_market_close())
+        # Utility.sleep_then_execute(time=prior_hour, secInterval=60, action=lambda: self.market_will_open())
+        # Utility.execute_then_sleep(time=open_hour, secInterval=60, action=lambda: self.on_market_open())
+        # Utility.sleep_then_execute(time=close_hour, secInterval=60, action=lambda: self.on_market_close())
 
-    def market_will_open():
+    def test(self):
+        print("HELLO " + str(datetime.datetime.today()))
+        return
+
+    def market_will_open(self):
 
         pass
 
-    def on_market_open():
-
+    def on_market_open(self):
+        # Cannot include a buy or sell
         pass
 
-    def on_market_close():
+    def on_market_close(self):
 
         pass

@@ -33,6 +33,8 @@ PASSWORD = os.getenv("PASSWORD")
 # Initialize Query object with credentials from .env
 query = Query(EMAIL, PASSWORD)
 
+print(query.user_portfolio())
+
 # Plotting Test
 
 # historicals = query.get_history("CRMD")

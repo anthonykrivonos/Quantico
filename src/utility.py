@@ -8,6 +8,7 @@
 import sys
 import re, datetime
 from time import sleep
+import threading
 
 # Matplotlib
 import matplotlib as mpl
@@ -113,7 +114,7 @@ class Utility:
             sleep(secInterval)
         return action
 
-    # sleep_then_execute:Return(action)
+    # sleep_then_execute:Void
     # param time:String|datetime => If string, must look like "hh:mm". Otherwise, a datetime to wait until.
     # param action:lambda Function => The function to execute on the secInterval before the time is reached.
     # param secInterval:Integer => The number of seconds until the sleep condition is checked again.
@@ -123,10 +124,21 @@ class Utility:
             end_time = time(*(map(int, time.split(':'))))
         else:
             end_time = time.time()
-        while end_time > datetime.datetime.today().time():
-            action()
-            sleep(secInterval)
-        return action
+        Utility.set_interval(lambda: action(), secInterval, end_time)
+        # threading.Timer(secInterval, lambda: Utility._repeat_execution(end_time, , secInterval)).start()
+        # while True:
+        #     if end_time <= datetime.datetime.today().time():
+        #         t.cancel()
+
+    @staticmethod
+    def set_interval(func, sec, stop_time):
+        def func_wrapper():
+            if stop_time >= datetime.datetime.today().time():
+                interval = Utility.set_interval(func, sec, stop_time)
+                func()
+        t = threading.Timer(sec, func_wrapper)
+        t.start()
+        return t
 
     # get_next_market_hours:Return(action)
     # returns Datetime tuple with (next_market_open_datetime, next_market_close_datetime)
