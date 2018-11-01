@@ -69,15 +69,15 @@ class Utility:
 
     # plot_historicals:Void (static)
     # param historicals:String => Raw dictionary returned from get_history(...) method in Query.
-    # param isCandleStick:Boolean => If true, plots a candlestick plot. Else, plots a line plot.
+    # param is_candlestick_chart:Boolean => If true, plots a candlestick plot. Else, plots a line plot.
     @staticmethod
-    def plot_historicals(historicals, isCandleStick = True):
+    def plot_historicals(historicals, is_candlestick_chart = True):
         quotes = list(map(lambda quote: Utility.get_quote_quintuple(quote), historicals['historicals']))
 
         fig, ax = plt.subplots(figsize=(8, 5))
         fig.subplots_adjust(bottom=0.2)
 
-        if isCandleStick:
+        if is_candlestick_chart:
             mpf.candlestick_ochl(ax, quotes, width=0.1, colorup="#20CE99", colordown="#F4542F")
         else:
             closes = list(map(lambda quote: quote[2], quotes))
@@ -99,44 +99,53 @@ class Utility:
 
         plt.show()
 
-    # sleep_then_execute:Return(action)
-    # param time:String|datetime => If string, must look like "hh:mm". Otherwise, a datetime to wait until.
-    # param action:lambda Function => The function to execute once the waiting period is over.
-    # param secInterval:Integer => The number of seconds until the sleep condition is checked again.
-    # returns The executed function.
-    @staticmethod
-    def sleep_then_execute(time, action, secInterval = 60):
-        if time is str:
-            start_time = time(*(map(int, time.split(':'))))
-        else:
-            start_time = time.time()
-        while start_time > datetime.datetime.today().time():
-            sleep(secInterval)
-        return action
-
     # sleep_then_execute:Void
     # param time:String|datetime => If string, must look like "hh:mm". Otherwise, a datetime to wait until.
-    # param action:lambda Function => The function to execute on the secInterval before the time is reached.
-    # param secInterval:Integer => The number of seconds until the sleep condition is checked again.
+    # param action:lambda Function => The function to execute once the waiting period is over.
+    # param sec:Integer => The number of seconds until the sleep condition is checked again.
+    # returns The executed function.
     @staticmethod
-    def execute_then_sleep(time, action, secInterval = 60):
-        if time is str:
-            end_time = time(*(map(int, time.split(':'))))
-        else:
-            end_time = time.time()
-        Utility.set_interval(lambda: action(), secInterval, end_time)
-        # threading.Timer(secInterval, lambda: Utility._repeat_execution(end_time, , secInterval)).start()
-        # while True:
-        #     if end_time <= datetime.datetime.today().time():
-        #         t.cancel()
+    def sleep_then_execute(time, action, sec = 60):
+        Utility.set_interval(sec, lambda: action(), time, None)
 
+    # execute_between_times:Void
+    # param start_time:datetime|None => The datetime for the execution to begin.
+    # param stop_time:datetime|None => The datetime for the execution to end.
+    # param action:lambda Function => The function to execute on the secInterval before the time is reached.
+    # param sec:Integer => The number of seconds until the sleep condition is checked again.
     @staticmethod
-    def set_interval(func, sec, stop_time):
-        def func_wrapper():
-            if stop_time >= datetime.datetime.today().time():
-                interval = Utility.set_interval(func, sec, stop_time)
-                func()
-        t = threading.Timer(sec, func_wrapper)
+    def execute_between_times(start_time, stop_time, action, sec = 60):
+        Utility.set_interval(sec, lambda: action(), start_time, stop_time)
+
+    # set_interval:Timer
+    # param sec:Integer => Number of seconds between each execution of action.
+    # param action:lambda Function => The function to execute on the secInterval before the time is reached.
+    # param start_time:datetime|None => The datetime for the interval to begin.
+    # param stop_time:datetime|None => The datetime for the interval to end.
+    @staticmethod
+    def set_interval(sec, action, start_time = None, stop_time = None):
+        def call_action():
+            now = datetime.datetime.today()
+            if start_time is not None and stop_time is not None:
+                if start_time < now and stop_time >= now:
+                    Utility.set_interval(sec, action, start_time, stop_time)
+                    action()
+                elif start_time > now:
+                    Utility.set_interval(sec, action, start_time, stop_time)
+                elif stop_time < now:
+                    action()
+            elif start_time is None:
+                if stop_time is None:
+                    action()
+                elif stop_time >= now:
+                    Utility.set_interval(sec, action, None, stop_time)
+                    action()
+            else:
+                if start_time > now:
+                    Utility.set_interval(sec, action, start_time, None)
+                else:
+                    action()
+        t = threading.Timer(sec, call_action)
         t.start()
         return t
 

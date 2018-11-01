@@ -13,6 +13,8 @@ class NoDayTradesAlgorithm:
 
     def __init__(self, query):
 
+        # NOTE: For now, the properties don't do anything, obviously.
+
         # Query
         self.query = query
 
@@ -28,36 +30,34 @@ class NoDayTradesAlgorithm:
 
         market_hours = Utility.get_next_market_hours()
         prior_hour = market_hours[0] - datetime.timedelta(hours=1)
+
+        # Actual upcoming open and close market hours
         open_hour = market_hours[0]
         close_hour = market_hours[1]
-        print(open_hour)
-        print(close_hour)
 
-        test = datetime.datetime.today() + datetime.timedelta(seconds=10)
-
-        print("executing in " + str(test))
-
-        # Utility.sleep_then_execute(time=test, secInterval=1, action=lambda: self.test())
-
-        Utility.execute_then_sleep(time=test, secInterval=1, action=lambda: self.test())
+        # Test times for event calls
+        test_start = datetime.datetime.today() + datetime.timedelta(seconds=10)
+        test_stop = datetime.datetime.today() + datetime.timedelta(seconds=20)
 
         # Execute event functions
-        # Utility.sleep_then_execute(time=prior_hour, secInterval=60, action=lambda: self.market_will_open())
-        # Utility.execute_then_sleep(time=open_hour, secInterval=60, action=lambda: self.on_market_open())
-        # Utility.sleep_then_execute(time=close_hour, secInterval=60, action=lambda: self.on_market_close())
+        Utility.sleep_then_execute(time=test_start, sec=1, action=lambda: self.market_will_open())
+        Utility.execute_between_times(start_time=test_start, stop_time=test_stop, sec=1, action=lambda: self.on_market_open())
+        Utility.sleep_then_execute(time=test_stop, sec=1, action=lambda: self.on_market_close())
 
-    def test(self):
-        print("HELLO " + str(datetime.datetime.today()))
-        return
-
+    # market_will_open:Void
+    # NOTE: Called an hour before the market opens.
     def market_will_open(self):
-
+        print("Market will open.")
         pass
 
+    # on_market_open:Void
+    # NOTE: Called exactly when the market opens. Cannot include a buy or sell.
     def on_market_open(self):
-        # Cannot include a buy or sell
+        print("Market has opened.")
         pass
 
+    # on_market_close:Void
+    # NOTE: Called exactly when the market closes.
     def on_market_close(self):
-
+        print("Market has closed.")
         pass
