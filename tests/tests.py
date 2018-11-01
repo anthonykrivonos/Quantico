@@ -38,4 +38,6 @@ query = Query(EMAIL, PASSWORD)
 # historicals = query.get_history("CRMD")
 # Utility.plot_historicals(historicals, is_candlestick_chart=True)
 
-NoDayTradesAlgorithm(query)
+# print(query.user_stock_portfolio())
+
+# NoDayTradesAlgorithm(query)

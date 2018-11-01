@@ -60,6 +60,13 @@ class Utility:
     def get_quote_quintuple(quoteDict):
         return (mpl.dates.date2num(Utility.iso_to_datetime(quoteDict['begins_at'])), float(quoteDict['open_price']), float(quoteDict['close_price']), float(quoteDict['high_price']), float(quoteDict['low_price']))
 
+    # get_close_quadruple:(time, open, close, high, low) (static)
+    # param historicals:[String:Any] => A historicals dict from the Query class.
+    # returns A list of quintuples containing (time, open, close, high, low).
+    @staticmethod
+    def get_quintuples_from_historicals(historicals):
+        return list(map(lambda quote: Utility.get_quote_quintuple(quote), historicals['historicals']))
+
     # d64_to_datetime:datetime (static)
     # param dt64:datetime64 => A NumPy base 64 date.
     # returns A datetime object.
@@ -72,7 +79,7 @@ class Utility:
     # param is_candlestick_chart:Boolean => If true, plots a candlestick plot. Else, plots a line plot.
     @staticmethod
     def plot_historicals(historicals, is_candlestick_chart = True):
-        quotes = list(map(lambda quote: Utility.get_quote_quintuple(quote), historicals['historicals']))
+        quotes = Utility.get_quintuples_from_historicals(historicals)
 
         fig, ax = plt.subplots(figsize=(8, 5))
         fig.subplots_adjust(bottom=0.2)

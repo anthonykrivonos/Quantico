@@ -44,6 +44,10 @@ class NoDayTradesAlgorithm:
         Utility.execute_between_times(start_time=test_start, stop_time=test_stop, sec=1, action=lambda: self.on_market_open())
         Utility.sleep_then_execute(time=test_stop, sec=1, action=lambda: self.on_market_close())
 
+    #
+    # Event Functions
+    #
+
     # market_will_open:Void
     # NOTE: Called an hour before the market opens.
     def market_will_open(self):
@@ -60,4 +64,12 @@ class NoDayTradesAlgorithm:
     # NOTE: Called exactly when the market closes.
     def on_market_close(self):
         print("Market has closed.")
+        pass
+
+
+    #
+    # Get Functions
+    #
+
+    def get_yesterdays_quotes(self):
         pass

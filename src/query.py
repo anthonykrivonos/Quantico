@@ -35,6 +35,16 @@ class Span(Enum):
     WEEK = "week"             # 7 days' time
     YEAR = "year"             # 365 days' time
 
+# Tag Enum
+class Tag(Enum):
+    TOP_MOVERS = "top-movers"
+    ETF = "etf"
+    MOST_POPULAR = "100-most-popular"
+    MUTUAL_FUND = "mutual-fund"
+    FINANCE = "finance"
+    CAP_WEIGHTED = "cap-weighted"
+    INVESTMENT_OR_TRUST = "investment-trust-or-fund"
+
 # Query Class
 class Query:
 
@@ -103,6 +113,12 @@ class Query:
     def get_market_data(self, optionId):
         return self.trader.get_option_market_data(optionId)
 
+    # get_by_tag:[String:String]
+    # param tag:Tag => Type of tag to return the quotes by.
+    # returns Quotes for the given tag.
+    def get_by_tag(self, tag):
+        return self.trader.get_tickers_by_tag(tag.value)
+
     ##                ##
     #   User Methods   #
     ##                ##
@@ -111,6 +127,11 @@ class Query:
     # returns Portfolio for the logged in user.
     def user_portfolio(self):
         return self.trader.portfolios()
+
+    # user_stock_portfolio:[String:String]
+    # returns Stock portfolio for the logged in user.
+    def user_stock_portfolio(self):
+        return self.trader.stock_portfolio()
 
     # user_portfolio:[String:String]
     # returns Positions for the logged in user.
@@ -125,7 +146,7 @@ class Query:
     # user_securities:[String:String]
     # returns Securities for the logged in user.
     def user_securities(self):
-        return self.trader.positions()
+        return self.trader.securities_owned()
 
     # user_equity:[String:String]
     # returns Equity for the logged in user.

@@ -701,6 +701,10 @@ class Robinhood:
     #                           PORTFOLIOS DATA
     ###########################################################################
 
+    def stock_portfolio(self):
+        positions = self.positions()['results'] or []
+        return list(map(lambda position: self.session.get(position['instrument'], timeout=15).json(), positions))
+
     def portfolios(self):
         """Returns the user's portfolio data """
 
