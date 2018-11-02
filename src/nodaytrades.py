@@ -26,28 +26,29 @@ class NoDayTradesAlgorithm:
         self.sells_allowed = 10
         self.cancels_allowed = 20
 
+        # Initialize the algorithm
+        self.initialize()
+
+    #
+    # Event Functions
+    #
+
+    # initialize:void
+    # NOTE: Configures the algorithm to run indefinitely.
+    def initialize(self):
+
         # Actual upcoming open and close market hours
         market_hours = Utility.get_next_market_hours()
         self.pre_open_hour = market_hours[0] - datetime.timedelta(hours=1)
         self.open_hour = market_hours[0]
         self.close_hour = market_hours[1]
 
-        # Test times for event calls
-        # test_prior = datetime.datetime.today() + datetime.timedelta(seconds=4)
-        # test_start = datetime.datetime.today() + datetime.timedelta(seconds=10)
-        # test_stop = datetime.datetime.today() + datetime.timedelta(seconds=20)
-        # Utility.sleep_then_execute(time=test_prior, sec=10, action=lambda: self.market_will_open())
-        # Utility.execute_between_times(start_time=test_start, stop_time=test_stop, sec=10, action=lambda: self.on_market_open())
-        # Utility.sleep_then_execute(time=test_stop, sec=10, action=lambda: self.on_market_close())
+        # Schedule event functions
+        sec_interval = 900 # 15 minutes
+        Utility.sleep_then_execute(time=self.pre_open_hour, sec=sec_interval, action=lambda: self.market_will_open())
+        Utility.execute_between_times(start_time=self.open_hour, stop_time=self.close_hour, sec=sec_interval, action=lambda: self.on_market_open())
+        Utility.sleep_then_execute(time=self.close_hour, sec=sec_interval, action=lambda: self.on_market_close())
 
-        # Execute event functions
-        Utility.sleep_then_execute(time=self.pre_open_hour, sec=10, action=lambda: self.market_will_open())
-        Utility.execute_between_times(start_time=self.open_hour, stop_time=self.close_hour, sec=10, action=lambda: self.on_market_open())
-        Utility.sleep_then_execute(time=self.close_hour, sec=10, action=lambda: self.on_market_close())
-
-    #
-    # Event Functions
-    #
 
     # market_will_open:Void
     # NOTE: Called an hour before the market opens.
@@ -67,21 +68,24 @@ class NoDayTradesAlgorithm:
     def on_market_close(self):
         Utility.log("Market has closed.")
         self.weights_trading_algorithm()
+
+        # Run initialize to start trading next day
+        self.initialize()
         pass
 
     #
     # Algorithm
     #
 
+    # weights_trading_algorithm:Void
+    # NOTE: Algorithm works like this:
+    #   - Assign "purchase propensities" depending on the following criteria:
+    #   - ROUND 1: Concavity of price graph
+    #   - ROUND 2: Most recent rate of change in the price graph
+    #   - ROUND 3: Price of the stock
+    #   - Sell bottom 2/3 of performers
+    #   - Buy top 1/3 of performers by ratio
     def weights_trading_algorithm(self):
-
-        #
-        #   Algorithm:
-        #   - Assign "purchase propensities" depending on the following criteria:
-        #   - ROUND 1: Concavity of price graph
-        #   - ROUND 2: Most recent rate of change in the price graph
-        #   - ROUND 3: Price of the stock
-        #
 
         Utility.log("Executing weights_trading_algorithm:")
 
@@ -183,7 +187,7 @@ class NoDayTradesAlgorithm:
             symbol_purchase_propensity[pair[0]] += factor
             factor /= ROUND_3_WEIGHT
 
-        # Conver the list of propensities into an array of tuples
+        # Convert the list of propensities into an array of tuples
         symbol_propensity_list = []
         for symbol, propensity in symbol_purchase_propensity.items():
             symbol_propensity_list.append((symbol, propensity))
@@ -192,11 +196,11 @@ class NoDayTradesAlgorithm:
         symbol_propensity_list = sorted(symbol_propensity_list, key=lambda pair: pair[1], reverse=True)
 
         #
-        # First Execution - Sell bottom 3/4 performers
+        # First Execution - Sell bottom 2/3 performers
         #
 
         # Count the quotes to sell
-        bad_performer_count = round(symbol_count * 3 / 4)
+        bad_performer_count = round(symbol_count * 2 / 3)
         bad_performer_list = symbol_propensity_list[-1 * bad_performer_count:symbol_count]
 
         Utility.log("Bad performers: " + str(bad_performer_list))
@@ -260,6 +264,7 @@ class NoDayTradesAlgorithm:
                 self.query.exec_buy(symbol, quantity, stop, limit)
                 self.buys_allowed -= 1
                 Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+                return True
             else:
                 if self.buys_allowed == 0:
                     Utility.log("Could not buy " + symbol + ": Ran out of buys allowed")
@@ -267,9 +272,10 @@ class NoDayTradesAlgorithm:
                     Utility.log("Could not buy " + symbol + ": Inside market hours")
         except:
             Utility.log("Could not buy " + symbol + ": A client error occurred")
+        return False
 
 
-    # safe_sell:Void
+    # safe_sell:Boolean
     # param symbol:String => String symbol of the instrument.
     # param quantity:Number => Number of shares to execute sell for.
     # param stop:Number? => Sets a stop price on the sell, if not None.
@@ -282,6 +288,7 @@ class NoDayTradesAlgorithm:
                 self.query.exec_sell(symbol, quantity, stop, limit)
                 self.sells_allowed -= 1
                 Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+                return True
             else:
                 if self.sells_allowed == 0:
                     Utility.log("Could not sell " + symbol + ": Ran out of sells allowed")
@@ -289,6 +296,7 @@ class NoDayTradesAlgorithm:
                     Utility.log("Could not sell " + symbol + ": Inside market hours")
         except:
             Utility.log("Could not sell " + symbol + ": A client error occurred")
+        return False
 
 
     # safe_cancel:Void
@@ -301,6 +309,7 @@ class NoDayTradesAlgorithm:
                 self.query.exec_cancel(order_id)
                 self.cancels_allowed -= 1
                 Utility.log("Cancelled order " + order_id)
+                return True
             else:
                 if self.cancels_allowed == 0:
                     Utility.log("Could not cancel order " + order_id + ": Ran out of cancels allowed")
@@ -308,3 +317,4 @@ class NoDayTradesAlgorithm:
                     Utility.log("Could not cancel order " + order_id + ": Inside market hours")
         except:
             Utility.log("Could not cancel " + symbol + ": A client error occurred")
+        return False
