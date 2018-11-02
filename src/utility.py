@@ -28,6 +28,13 @@ from enums import *
 # Utility Methods
 class Utility:
 
+    # log:String
+    # param message:String => Message to log.
+    # NOTE: Prints a log message with time.
+    @staticmethod
+    def log(message):
+        print(str(Utility.now_datetime64()) + ": " + message)
+
     # get_date_string:String
     # param date:datetime => Date to be converted into a string.
     # returns The date as a formatted string YYYY-MM-dd.

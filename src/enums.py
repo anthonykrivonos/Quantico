@@ -18,7 +18,7 @@ class Option(Enum):
     PUT = "put"   # "put" order
 
 # Time Enum
-class Time(Enum):
+class GoodFor(Enum):
     GOOD_FOR_DAY = "GFD"        # "GFD" time
     GOOD_TIL_CANCELED = "GTC"   # "GTC" time
 

@@ -1259,7 +1259,11 @@ class Robinhood:
         if(instrument_URL is None):
             if(symbol is None):
                 raise(ValueError('Neither instrument_URL nor symbol were passed to submit_order'))
-            instrument_URL = self.instruments(symbol)[0]['url']
+            instruments_LIST = self.instruments(symbol)
+            if len(instruments_LIST) > 0:
+                instrument_URL = self.instruments(symbol)[0]['url']
+            else:
+                raise(ValueError('The instrument likely does not exist'))
 
         if(symbol is None):
             symbol = self.session.get(instrument_URL, timeout=15).json()['symbol']
@@ -1334,8 +1338,6 @@ class Robinhood:
             ]:
             if(value is not None):
                 payload[field] = value
-
-        print(payload)
 
         res = self.session.post(endpoints.orders(), data=payload, timeout=15)
         res.raise_for_status()

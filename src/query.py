@@ -206,11 +206,11 @@ class Query:
     # param quantity:Number => Number of shares to execute buy for.
     # param stop:Number? => Sets a stop price on the buy, if not None.
     # param limit:Number? => Sets a limit price on the buy, if not None.
-    # param time:Time? => Defines the expiration for a limited buy.
+    # param time:GoodFor? => Defines the expiration for a limited buy.
     # returns The order response.
     def exec_buy(self, symbol, quantity, stop = None, limit = None, time = None):
         if time is None:
-            time = Time.GOOD_TIL_CANCELED
+            time = GoodFor.GOOD_TIL_CANCELED
         if limit is not None:
             if stop is not None:
                 return self.trader.place_stop_limit_buy_order(None, symbol, time.value, stop, quantity)
@@ -224,11 +224,11 @@ class Query:
     # param quantity:Number => Number of shares to execute sell for.
     # param stop:Number? => Sets a stop price on the sell, if not None.
     # param limit:Number? => Sets a limit price on the sell, if not None.
-    # param time:Time? => Defines the expiration for a limited buy.
+    # param time:GoodFor? => Defines the expiration for a limited buy.
     # returns The order response.
     def exec_sell(self, symbol, quantity, stop = None, limit = None, time = None):
         if time is None:
-            time = Time.GOOD_TIL_CANCELED
+            time = GoodFor.GOOD_TIL_CANCELED
         if limit is not None:
             if stop is not None:
                 return self.trader.place_stop_limit_sell_order(None, symbol, time.value, stop, quantity)
@@ -238,7 +238,7 @@ class Query:
         return self.trader.place_market_sell_order(None, symbol, time.value, quantity)
 
     # exec_cancel:[String:String]
-    # param orderId:String => ID of the order to cancel.
+    # param order_id:String => ID of the order to cancel.
     # returns The canceled order response.
-    def exec_cancel(self, orderId):
-        return query.trader.cancel_order(orderId)
+    def exec_cancel(self, order_id):
+        return query.trader.cancel_order(order_id)

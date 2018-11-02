@@ -16,6 +16,8 @@ class NoDayTradesAlgorithm:
 
     def __init__(self, query):
 
+        Utility.log("Initialized NoDayTradesAlgorithm")
+
         # Query
         self.query = query
 
@@ -50,20 +52,20 @@ class NoDayTradesAlgorithm:
     # market_will_open:Void
     # NOTE: Called an hour before the market opens.
     def market_will_open(self):
-        print("Market will open.")
+        Utility.log("Market will open.")
         self.weights_trading_algorithm()
         pass
 
     # on_market_open:Void
     # NOTE: Called exactly when the market opens. Cannot include a buy or sell.
     def on_market_open(self):
-        print("Market has opened.")
+        Utility.log("Market has opened.")
         pass
 
     # on_market_close:Void
     # NOTE: Called exactly when the market closes.
     def on_market_close(self):
-        print("Market has closed.")
+        Utility.log("Market has closed.")
         self.weights_trading_algorithm()
         pass
 
@@ -81,7 +83,7 @@ class NoDayTradesAlgorithm:
         #   - ROUND 3: Price of the stock
         #
 
-        print("Executing weights_trading_algorithm:")
+        Utility.log("Executing weights_trading_algorithm:")
 
         # The percentage of the user's total equity to use for this algorithm
         USER_CASH_PERCENTAGE = 0.6
@@ -91,10 +93,10 @@ class NoDayTradesAlgorithm:
         ROUND_2_WEIGHT = 1.70
         ROUND_3_WEIGHT = 1.20
 
-        print("Cash percentage: " + USER_CASH_PERCENTAGE)
-        print("Round 1 weight: " + ROUND_1_WEIGHT)
-        print("Round 2 weight: " + ROUND_2_WEIGHT)
-        print("Round 3 weight: " + ROUND_3_WEIGHT)
+        Utility.log("Cash percentage: " + str(USER_CASH_PERCENTAGE))
+        Utility.log("Round 1 weight: " + str(ROUND_1_WEIGHT))
+        Utility.log("Round 2 weight: " + str(ROUND_2_WEIGHT))
+        Utility.log("Round 3 weight: " + str(ROUND_3_WEIGHT))
 
         # Query for all symbols owned by the user
         all_user_symbols = []
@@ -197,7 +199,7 @@ class NoDayTradesAlgorithm:
         bad_performer_count = round(symbol_count * 3 / 4)
         bad_performer_list = symbol_propensity_list[-1 * bad_performer_count:symbol_count]
 
-        print("Bad performers: " + str(bad_performer_list))
+        Utility.log("Bad performers: " + str(bad_performer_list))
 
         # Sell each poor performer
         for pair in bad_performer_list:
@@ -205,8 +207,8 @@ class NoDayTradesAlgorithm:
             quantity = symbol_quantity_map[symbol]
             limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
             if quantity > 0.0:
-                print("Selling " + str(quantity) + " shares of " + symbol + " with limit " + str(limit))
-                # self.safe_sell(symbol, quantity, limit=limit)
+                Utility.log("Selling " + str(quantity) + " shares of " + symbol + " with limit " + str(limit))
+                self.safe_sell(symbol, quantity, limit=limit)
 
         #
         # Second Execution - Buy top 1/4 performers
@@ -216,7 +218,7 @@ class NoDayTradesAlgorithm:
         good_performer_count = symbol_count - bad_performer_count
         good_performer_list = symbol_propensity_list[0:good_performer_count]
 
-        print("Good performers: " + str(good_performer_list))
+        Utility.log("Good performers: " + str(good_performer_list))
 
         user_cash = USER_CASH_PERCENTAGE * self.query.user_buying_power()
 
@@ -236,10 +238,9 @@ class NoDayTradesAlgorithm:
             quantity = round(triple[2] / symbol_quintuple_map[symbol][-1][Quintuple.HIGH.value])
             limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
             if quantity > 0.0:
-                print("Buying " + str(quantity) + " shares of " + symbol + " with limit " + str(limit))
-                # self.safe_buy(symbol, quantity, limit=limit)
+                self.safe_buy(symbol, quantity, limit=limit)
 
-        print("Finished run of weights_trading_algorithm")
+        Utility.log("Finished run of weights_trading_algorithm")
 
 
     #
@@ -254,8 +255,19 @@ class NoDayTradesAlgorithm:
     # NOTE: Safely executes a buy order outside of open hours, if possible.
     def safe_buy(self, symbol, quantity, stop = None, limit = None):
         now = Utility.now_datetime64()
-        if self.buys_allowed > 0 and (now < self.open_hour or now > self.close_hour):
-            self.query.exec_buy(self, symbol, quantity, stop, limit)
+        try:
+            if self.buys_allowed > 0 and (now < self.open_hour or now > self.close_hour):
+                self.query.exec_buy(symbol, quantity, stop, limit)
+                self.buys_allowed -= 1
+                Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+            else:
+                if self.buys_allowed == 0:
+                    Utility.log("Could not buy " + symbol + ": Ran out of buys allowed")
+                elif now >= self.open_hour and now <= self.close_hour:
+                    Utility.log("Could not buy " + symbol + ": Inside market hours")
+        except:
+            Utility.log("Could not buy " + symbol + ": A client error occurred")
+
 
     # safe_sell:Void
     # param symbol:String => String symbol of the instrument.
@@ -265,14 +277,34 @@ class NoDayTradesAlgorithm:
     # NOTE: Safely executes a sell order outside of open hours, if possible.
     def safe_sell(self, symbol, quantity, stop = None, limit = None):
         now = Utility.now_datetime64()
-        if self.sells_allowed > 0 and (now < self.open_hour or now > self.close_hour):
-            self.query.exec_sell(self, symbol, quantity, stop, limit)
-            self.sells_allowed -= 1
+        try:
+            if self.sells_allowed > 0 and (now < self.open_hour or now > self.close_hour):
+                self.query.exec_sell(symbol, quantity, stop, limit)
+                self.sells_allowed -= 1
+                Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+            else:
+                if self.sells_allowed == 0:
+                    Utility.log("Could not sell " + symbol + ": Ran out of sells allowed")
+                elif now >= self.open_hour and now <= self.close_hour:
+                    Utility.log("Could not sell " + symbol + ": Inside market hours")
+        except:
+            Utility.log("Could not sell " + symbol + ": A client error occurred")
+
 
     # safe_cancel:Void
-    # param orderId:String => ID of the order to cancel.
+    # param order_id:String => ID of the order to cancel.
     # NOTE: Safely cancels an order given its ID, if possible.
-    def safe_cancel(order_id, orderId):
+    def safe_cancel(self, order_id):
         now = Utility.now_datetime64()
-        if self.cancels_allowed > 0:
-            self.query.exec_cancel(order_id)
+        try:
+            if self.cancels_allowed > 0 and (now < self.open_hour or now > self.close_hour):
+                self.query.exec_cancel(order_id)
+                self.cancels_allowed -= 1
+                Utility.log("Cancelled order " + order_id)
+            else:
+                if self.cancels_allowed == 0:
+                    Utility.log("Could not cancel order " + order_id + ": Ran out of cancels allowed")
+                elif now >= self.open_hour and now <= self.close_hour:
+                    Utility.log("Could not cancel order " + order_id + ": Inside market hours")
+        except:
+            Utility.log("Could not cancel " + symbol + ": A client error occurred")
