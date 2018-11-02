@@ -22,7 +22,8 @@ import pandas_market_calendars as mcal
 # NumPy
 import numpy as np
 
-from enum import Enum
+# Enums
+from enums import *
 
 # Utility Methods
 class Utility:
@@ -33,6 +34,12 @@ class Utility:
     @staticmethod
     def get_date_string(date):
         return date.strftime('%Y-%m-%d')
+
+    # now_datetime64:datetime64
+    # returns The current date as a datetime64.
+    @staticmethod
+    def now_datetime64():
+        return np.datetime64(datetime.datetime.now())
 
     # today_date_string:String
     # returns The current date as a formatted string YYYY-MM-dd.
@@ -156,7 +163,7 @@ class Utility:
         t.start()
         return t
 
-    # get_next_market_hours:Return(action)
+    # get_next_market_hours:(datetime, datetime)
     # returns Datetime tuple with (next_market_open_datetime, next_market_close_datetime)
     @staticmethod
     def get_next_market_hours(market = "NYSE"):

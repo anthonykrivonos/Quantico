@@ -33,11 +33,4 @@ PASSWORD = os.getenv("PASSWORD")
 # Initialize Query object with credentials from .env
 query = Query(EMAIL, PASSWORD)
 
-# Plotting Test
-
-# historicals = query.get_history("CRMD")
-# Utility.plot_historicals(historicals, is_candlestick_chart=True)
-
-# print(query.user_stock_portfolio())
-
-# NoDayTradesAlgorithm(query)
+NoDayTradesAlgorithm(query)

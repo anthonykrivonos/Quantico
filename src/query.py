@@ -8,42 +8,10 @@
 import sys
 sys.path.append('ext_modules')
 from datetime import date
-from enum import Enum
 
 from Robinhood import Robinhood
 
-# Bounds Enum
-class Bounds(Enum):
-    REGULAR = 'regular'     # regular bounds
-    EXTENDED = 'extended'   # extended bounds
-
-# Option Enum
-class Option(Enum):
-    CALL = "call" # "call" order
-    PUT = "put"   # "put" order
-
-# Time Enum
-class Time(Enum):
-    GOOD_FOR_DAY = "GFD"        # "GFD" time
-    GOOD_TIL_CANCELED = "GTC"   # "GTC" time
-
-# Time Enum
-class Span(Enum):
-    FIVE_MINUTE = "5minute"   # Five minute's time
-    TEN_MINUTE = "10minute"   # Ten minute's time
-    DAY = "day"               # 24 hours' time
-    WEEK = "week"             # 7 days' time
-    YEAR = "year"             # 365 days' time
-
-# Tag Enum
-class Tag(Enum):
-    TOP_MOVERS = "top-movers"
-    ETF = "etf"
-    MOST_POPULAR = "100-most-popular"
-    MUTUAL_FUND = "mutual-fund"
-    FINANCE = "finance"
-    CAP_WEIGHTED = "cap-weighted"
-    INVESTMENT_OR_TRUST = "investment-trust-or-fund"
+from enums import *
 
 # Query Class
 class Query:
@@ -128,10 +96,25 @@ class Query:
     def user_portfolio(self):
         return self.trader.portfolios()
 
-    # user_stock_portfolio:[String:String]
+    # user_stock_portfolio:[String:any]
     # returns Stock portfolio for the logged in user.
     def user_stock_portfolio(self):
         return self.trader.stock_portfolio()
+
+    # user_all_symbols:[String]
+    # returns A list of string symbols the user ever owned.
+    def user_all_symbols(self):
+        return list(map(lambda quote: quote['symbol'], self.user_stock_portfolio()))
+
+    # user_current_symbols:[String]
+    # returns A list of string symbols the user currently owns.
+    def user_current_symbols(self):
+        symbols = []
+        quotes = self.user_stock_portfolio()
+        for quote in quotes:
+            if float(quote['quantity']) > 0.0:
+                symbols.append(quote['symbol'])
+        return symbols
 
     # user_portfolio:[String:String]
     # returns Positions for the logged in user.
@@ -203,6 +186,16 @@ class Query:
     # returns The order history for the logged in user.
     def user_orders(self):
         return self.trader.order_history(None)
+
+    # user_account:[[String:String]]
+    # returns The user's account.
+    def user_account(self):
+        return self.trader.get_account()
+
+    # user_buying_power:float
+    # returns The user's buying power.
+    def user_buying_power(self):
+        return float(self.trader.get_account()['buying_power'] or 0.0)
 
     ##                     ##
     #   Execution Methods   #
