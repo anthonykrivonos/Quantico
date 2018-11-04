@@ -1,8 +1,8 @@
 # Anthony Krivonos
 # Oct 29, 2018
-# tests/tests.py
+# driver/driver.py
 
-# Abstract: File with platform tests.
+# Abstract: Main script to run algorithms from.
 
 # Global Imports
 import sys
@@ -19,7 +19,8 @@ os.environ.update(dotenv)
 # Local Imports
 from query import *
 from utility import *
-from nodaytrades import *
+
+from algorithms import *
 
 # Plotting
 import numpy as np
@@ -28,9 +29,7 @@ import numpy as np
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 
-# Helper
-
 # Initialize Query object with credentials from .env
 query = Query(EMAIL, PASSWORD)
 
-NoDayTradesAlgorithm(query)
+TopMoversNoDayTradesAlgorithm(query)

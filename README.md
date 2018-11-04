@@ -22,8 +22,8 @@ EMAIL=yourEmail@probably.com
 PASSWORD=yourPassword123
 ```
 
-4. Run tests in the `tests/tests.py` file. It will use `dotenv` to load your `EMAIL` and `PASSWORD`, so you don't have to worry about hardcoding these credentials.
-5. `cd` to `tests`. Start the tests script with `python tests.py`.
+4. Run scripts in the `driver/driver.py` file. It will use `dotenv` to load your `EMAIL` and `PASSWORD`, so you don't have to worry about hardcoding these credentials.
+5. `cd` to `tests`. Start the tests script with `python driver/driver.py`.
 
 As this project evolves, I will give users the option to run their algorithms on a REST server, as well as better constructed script files.
 

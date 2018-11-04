@@ -4,73 +4,58 @@
 
 # Abstract: Algorithm employing the no-day-trades tactic.
 
-import numpy as np #needed for NaN handling
-import math #ceil and floor are useful for rounding
+# Global Imports
+import numpy as np
+import math
 
+# Local Imports
 from utility import *
 from enums import *
+from mathematics import *
+from algorithm import Algorithm
 
-from algmath import *
+class TopMoversNoDayTradesAlgorithm(Algorithm):
 
-class NoDayTradesAlgorithm:
+    # initialize:Void
+    # param query:Query => Query object for API access.
+    # param sec_interval:Integer => Time interval in seconds for event handling.
+    def __init__(self, query, sec_interval = 900):
 
-    def __init__(self, query):
-
-        Utility.log("Initialized NoDayTradesAlgorithm")
-
-        # Query
-        self.query = query
+        # Call super.__init__
+        Algorithm.__init__(self, query, sec_interval, name = "TopMoversNoDayTradesAlgorithm")
 
         # Properties
         self.buys_allowed = 10
         self.sells_allowed = 10
         self.cancels_allowed = 20
 
-        # Initialize the algorithm
-        self.initialize()
+        self.weights_trading_algorithm()
 
     #
     # Event Functions
     #
 
-    # initialize:void
-    # NOTE: Configures the algorithm to run indefinitely.
-    def initialize(self):
-
-        # Actual upcoming open and close market hours
-        market_hours = Utility.get_next_market_hours()
-        self.pre_open_hour = market_hours[0] - datetime.timedelta(hours=1)
-        self.open_hour = market_hours[0]
-        self.close_hour = market_hours[1]
-
-        # Schedule event functions
-        sec_interval = 900 # 15 minutes
-        Utility.sleep_then_execute(time=self.pre_open_hour, sec=sec_interval, action=lambda: self.market_will_open())
-        Utility.execute_between_times(start_time=self.open_hour, stop_time=self.close_hour, sec=sec_interval, action=lambda: self.on_market_open())
-        Utility.sleep_then_execute(time=self.close_hour, sec=sec_interval, action=lambda: self.on_market_close())
-
 
     # market_will_open:Void
     # NOTE: Called an hour before the market opens.
     def market_will_open(self):
-        Utility.log("Market will open.")
+        Algorithm.market_will_open(self)
+
         self.weights_trading_algorithm()
         pass
 
     # on_market_open:Void
     # NOTE: Called exactly when the market opens. Cannot include a buy or sell.
     def on_market_open(self):
-        Utility.log("Market has opened.")
+        Algorithm.on_market_open(self)
         pass
 
     # on_market_close:Void
     # NOTE: Called exactly when the market closes.
     def on_market_close(self):
-        Utility.log("Market has closed.")
-        self.weights_trading_algorithm()
+        Algorithm.on_market_close(self)
 
-        # Run initialize to start trading next day
-        self.initialize()
+        self.weights_trading_algorithm()
         pass
 
     #
@@ -102,18 +87,20 @@ class NoDayTradesAlgorithm:
         Utility.log("Round 2 weight: " + str(ROUND_2_WEIGHT))
         Utility.log("Round 3 weight: " + str(ROUND_3_WEIGHT))
 
-        # Query for all symbols owned by the user
-        all_user_symbols = []
+        # Query for all top moving symbols
+        all_watched_symbols = self.query.get_by_tag(Tag.TOP_MOVERS)
 
-        # Story the quantities of each stock owned, as well as the symbol into a list of all symbols
+        # Store the quantities of each owned stock and update the quantity of shares owned per stock into the map
         user_portfolio = self.query.user_stock_portfolio()
         symbol_quantity_map = {}
+        for symbol in all_watched_symbols:
+            symbol_quantity_map[symbol] = 0.0
         for stock in user_portfolio:
             symbol_quantity_map[stock['symbol']] = float(stock['quantity']) or 0.0
-            all_user_symbols.append(stock['symbol'])
+            all_watched_symbols.append(stock['symbol'])
 
         # Store symbol count
-        symbol_count = len(all_user_symbols)
+        symbol_count = len(all_watched_symbols)
 
         # Store tuples for symbols to multiple different values
         # symbol: quintuple
@@ -131,7 +118,7 @@ class NoDayTradesAlgorithm:
         symbol_purchase_propensity = {}
 
         # Loop through symbols
-        for symbol in all_user_symbols:
+        for symbol in all_watched_symbols:
 
             # Default purchase propensity = 0
             symbol_purchase_propensity[symbol] = 0
