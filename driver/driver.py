@@ -11,9 +11,8 @@ sys.path.append('src')
 
 # Start .env
 from os.path import join, dirname
-from dotenv import Dotenv
-dotenv = Dotenv(join(dirname(__file__)+"/../", '.env'))
-os.environ.update(dotenv)
+from dotenv import load_dotenv
+dotenv = load_dotenv(join(dirname(__file__)+"/../", '.env'))
 # End .env
 
 # Local Imports
