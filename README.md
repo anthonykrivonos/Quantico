@@ -2,8 +2,7 @@
 
 Live quantitative trading algorithms for [Robinhood](https://robinhood.com/) in Python 3.
 
-![Robinhood Logo](https://timedotcom.files.wordpress.com/2018/08/robinhood_ios-android.jpg?quality=85)
-*Image Courtesy of Robinhood Markets, Inc.*
+![Quantico](https://i.imgur.com/JABBu3m.jpg)
 
 ## What's inside?
 
