@@ -60,6 +60,25 @@ class Utility:
     def tomorrow_date_string():
         return Utility.get_date_string(datetime.date.today() + datetime.timedelta(days=1))
 
+    # next_week_date_string:datetime
+    # returns Next week's date as a formatted string YYYY-MM-dd.
+    @staticmethod
+    def next_week_date_string():
+        return Utility.get_date_string(datetime.date.today() + datetime.timedelta(days=7))
+
+    # next_month_date_string:datetime
+    # returns Next month's date as a formatted string YYYY-MM-dd.
+    @staticmethod
+    def next_month_date_string():
+        today = datetime.date.today()
+        try:
+            return today.replace(month=today.month+1)
+        except ValueError:
+            if today.month == 12:
+                return today.replace(year=today.year+1, month=1)
+        return Utility.get_date_string(today + datetime.timedelta(days=30))
+
+
     # iso_to_datetime:datetime
     # param dateString:String => An ISO-formatted date string.
     # returns A datetime object correlating with the inputted dateString.
@@ -170,12 +189,15 @@ class Utility:
         t.start()
         return t
 
-    # get_next_market_hours:(datetime, datetime)
+    # get_next_market_hours:(datetime?, datetime?)
     # returns Datetime tuple with (next_market_open_datetime, next_market_close_datetime)
     @staticmethod
     def get_next_market_hours(market = "NYSE"):
         calendar = mcal.get_calendar(market)
-        schedule = calendar.schedule(Utility.today_date_string(), Utility.tomorrow_date_string())
+
+        # NOTE: Get all market days between today and next month, in case of weekends, breaks, and holidays.
+        schedule = calendar.schedule(Utility.today_date_string(), Utility.next_month_date_string())
+
         start_times = schedule['market_open'].values
         end_times = schedule['market_close'].values
 
