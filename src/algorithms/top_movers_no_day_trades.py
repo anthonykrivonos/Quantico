@@ -16,7 +16,7 @@ from algorithm import Algorithm
 
 class TopMoversNoDayTradesAlgorithm(Algorithm):
 
-    # initialize:Void
+    # __init__:Void
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
     def __init__(self, query, sec_interval = 900):
@@ -27,11 +27,38 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         # Properties
         self.buy_list = []          # List of stocks bought in the current day
         self.sell_list = []         # List of stocks sold in the current day
-        self.price_limit = 10.00    # Dollar limit for the maximum price of stocks to buy
+        self.price_limit = 20.00    # Dollar limit for the maximum price of stocks to buy
         self.buys_allowed = 30      # Number of buys allowed per day
         self.sells_allowed = 30     # Number of sells allowed per day
 
         self.perform_buy_sell()
+
+    # initialize:void
+    # NOTE: Configures the algorithm to run indefinitely.
+    def initialize(self):
+
+        Algorithm.initialize(self)
+
+        # Refresh buy and sell lists
+        self.buy_list = []
+        self.sell_list = []
+
+        # Update buy list and sell list with today's orders
+        todays_orders = self.query.user_orders()['results'] or []
+        todays_buys = []
+        todays_sells = []
+        for order in todays_orders:
+            if order['side'] == Side.BUY.value:
+                todays_buys.append(order)
+            else:
+                todays_sells.append(order)
+        todays_buys = [ self.query.stock_from_instrument_url(order['instrument'])['symbol'] for order in todays_buys if Utility.iso_to_datetime(order['last_transaction_at']).date() == datetime.datetime.now().date() ]
+        todays_sells = [ self.query.stock_from_instrument_url(order['instrument'])['symbol'] for order in todays_sells if Utility.iso_to_datetime(order['last_transaction_at']).date() == datetime.datetime.now().date() ]
+        self.buy_list = todays_buys
+        self.sell_list = todays_sells
+
+        Utility.log('Today Bought: ' + str(self.buy_list))
+        Utility.log('Today Sold  : ' + str(self.sell_list))
 
     #
     # Event Functions
@@ -82,9 +109,9 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         USER_CASH_PERCENTAGE = 0.6
 
         # Weight of each round of propensity calculation
-        ROUND_1_WEIGHT = 1.45
-        ROUND_2_WEIGHT = 1.70
-        ROUND_3_WEIGHT = 1.20
+        ROUND_1_WEIGHT = 1.1
+        ROUND_2_WEIGHT = 1.9
+        ROUND_3_WEIGHT = 1.2
 
         Utility.log("Cash percentage: " + str(USER_CASH_PERCENTAGE))
         Utility.log("Round 1 weight: " + str(ROUND_1_WEIGHT))
@@ -252,14 +279,13 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def safe_buy(self, symbol, quantity, stop = None, limit = None):
         now = Utility.now_datetime64()
         try:
-            if self.buys_allowed > 0 and symbol not in self.buy_list:
+            if len(self.buy_list) < self.buys_allowed and symbol not in self.buy_list:
                 self.query.exec_buy(symbol, quantity, stop, limit)
-                self.buys_allowed -= 1
                 self.buy_list.append(symbol)
                 Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 return True
             else:
-                if self.buys_allowed == 0:
+                if len(self.buy_list) == self.buys_allowed:
                     Utility.error("Could not buy " + symbol + ": Ran out of buys allowed")
                 elif now >= self.open_hour and now <= self.close_hour:
                     Utility.error("Could not buy " + symbol + ": Inside market hours")
@@ -279,14 +305,13 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def safe_sell(self, symbol, quantity, stop = None, limit = None):
         now = Utility.now_datetime64()
         try:
-            if self.sells_allowed > 0 and symbol not in self.sell_list:
+            if len(self.sell_list) < self.sells_allowed and symbol not in self.sell_list:
                 self.query.exec_sell(symbol, quantity, stop, limit)
-                self.sells_allowed -= 1
                 self.sell_list.append(symbol)
                 Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 return True
             else:
-                if self.sells_allowed == 0:
+                if len(self.sell_list) < self.sells_allowed:
                     Utility.error("Could not sell " + symbol + ": Ran out of sells allowed")
                 elif now >= self.open_hour and now <= self.close_hour:
                     Utility.error("Could not sell " + symbol + ": Inside market hours")

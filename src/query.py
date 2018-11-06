@@ -47,6 +47,12 @@ class Query:
     def get_instrument(self, symbol):
         return self.trader.instruments(symbol)[0] or None
 
+    # stock_from_instrument_url:Dict[String:String]
+    # param url:String => URL of instrument.
+    # returns Stock dictionary from the url of the instrument.
+    def stock_from_instrument_url(self, url):
+        return self.trader.stock_from_instrument_url(url)
+
     # get_history:[[String:String]]
     # param symbol:String => String symbol of the instrument.
     # param interval:Span => Time in between each value. (default: DAY)

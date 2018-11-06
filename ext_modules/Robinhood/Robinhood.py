@@ -210,6 +210,8 @@ class Robinhood:
 
         return data['results']
 
+    def stock_from_instrument_url(self, url):
+        return self.session.get(url, timeout=15).json()
 
     def quote_data(self, stock=''):
         """Fetch stock quote
@@ -689,7 +691,6 @@ class Robinhood:
 
 
         return data
-
 
     def fundamentals(self, stock=''):
         """Wrapper for get_fundamentlals function """

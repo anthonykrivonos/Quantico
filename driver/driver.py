@@ -13,7 +13,7 @@ sys.path.append('src')
 # Local Imports
 from query import *
 from utility import *
-
+from enums import *
 from algorithms import *
 
 # Plotting
@@ -24,7 +24,6 @@ import numpy as np
 #
 #   Driver
 #
-
 # Load EMAIL and PASSWORD constants from .env
 dotenv = load_dotenv(join(dirname(__file__)+"/../", '.env'))
 EMAIL = os.getenv("EMAIL")
@@ -40,8 +39,3 @@ except Exception as e:
 
 # Run algorithm
 TopMoversNoDayTradesAlgorithm(query)
-
-# Test compiling today's orders
-# todays_orders =  list(map(lambda order: order['instrument'], ))
-# todays_orders = [ order for order in (query.user_orders()['results'] or []) if Utility.iso_to_datetime(order['last_transaction_at']) ]
-# print(todays_orders)

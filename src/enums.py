@@ -8,6 +8,11 @@ from enum import Enum
 # Abstract: Collection of enums for query and Utility operations.
 
 # Bounds Enum
+class Side(Enum):
+    BUY = 'buy'     # buy side
+    SELL = 'sell'   # sell side
+
+# Bounds Enum
 class Bounds(Enum):
     REGULAR = 'regular'     # regular bounds
     EXTENDED = 'extended'   # extended bounds
