@@ -1,8 +1,13 @@
-#!/usr/bin/env python
+# Anthony Krivonos
+# Oct 29, 2018
+# setup.py
 
 from distutils.core import setup
 
-setup(name='Distutils',
+# Abstract: Setup script for packaging.
+
+setup(
+    name='Quantico',
     version='1.0',
     description='Algorithmic trading in Python.',
     author='Anthony Krivonos',

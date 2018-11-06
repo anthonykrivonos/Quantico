@@ -2,8 +2,6 @@
 # Oct 29, 2018
 # src/factory.py
 
-# Abstract: Math functions for dataset analysis.
-
 # Imports
 import sys
 
@@ -15,6 +13,8 @@ import numpy as np
 
 # Enums
 from enums import *
+
+# Abstract: Math functions for dataset analysis.
 
 # Math Methods
 class Math:

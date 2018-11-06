@@ -2,10 +2,10 @@
 # Oct 29, 2018
 # src/query.py
 
-# Abstract: Collection of enums for query and Utility operations.
-
 # Import Enum
 from enum import Enum
+
+# Abstract: Collection of enums for query and Utility operations.
 
 # Bounds Enum
 class Bounds(Enum):

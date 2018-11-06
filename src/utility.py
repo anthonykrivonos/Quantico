@@ -2,8 +2,6 @@
 # Oct 29, 2018
 # src/factory.py
 
-# Abstract: Utility methods for Quantico.
-
 # Imports
 import sys
 import re, datetime
@@ -26,7 +24,8 @@ import numpy as np
 # Enums
 from enums import *
 
-# Utility Methods
+# Abstract: Utility methods for Quantico.
+
 class Utility:
 
     # log:Void

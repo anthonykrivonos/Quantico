@@ -2,8 +2,6 @@
 # Oct 29, 2018
 # src/algorithm.py
 
-# Abstract: Generic/abstract algorithm parent class.
-
 # Global Imports
 import numpy as np
 import math
@@ -12,6 +10,8 @@ import math
 from utility import *
 from enums import *
 from mathematics import *
+
+# Abstract: Generic/abstract algorithm parent class.
 
 class Algorithm:
 

@@ -2,8 +2,6 @@
 # Oct 29, 2018
 # src/alg/nodaytrades.py
 
-# Abstract: Algorithm employing the no-day-trades tactic.
-
 # Global Imports
 import numpy as np
 import math
@@ -13,6 +11,8 @@ from utility import *
 from enums import *
 from mathematics import *
 from algorithm import Algorithm
+
+# Abstract: Algorithm employing the no-day-trades tactic.
 
 class TopMoversNoDayTradesAlgorithm(Algorithm):
 

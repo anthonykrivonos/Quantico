@@ -2,8 +2,6 @@
 # Oct 29, 2018
 # src/query.py
 
-# Abstract: Offers query methods that act as a wrapper for the Robinhood API and convert the returned objects into workable models.
-
 # Imports
 import sys
 sys.path.append('ext_modules')
@@ -14,7 +12,8 @@ from Robinhood import Robinhood
 from enums import *
 from utility import *
 
-# Query Class
+# Abstract: Offers query methods that act as a wrapper for the Robinhood API and convert the returned objects into workable models.
+
 class Query:
 
     # __init__:Void

@@ -2,20 +2,13 @@
 # Oct 29, 2018
 # driver/driver.py
 
-# Abstract: Main script to run algorithms from.
-
 # Global Imports
 import sys
 import os
-sys.path.append('src')
-
 import numpy as np
-
-# Start .env
 from os.path import join, dirname
 from dotenv import load_dotenv
-dotenv = load_dotenv(join(dirname(__file__)+"/../", '.env'))
-# End .env
+sys.path.append('src')
 
 # Local Imports
 from query import *
@@ -26,7 +19,14 @@ from algorithms import *
 # Plotting
 import numpy as np
 
-# Query Tests
+# Abstract: Main script to run algorithms from.
+
+#
+#   Driver
+#
+
+# Load EMAIL and PASSWORD constants from .env
+dotenv = load_dotenv(join(dirname(__file__)+"/../", '.env'))
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 
