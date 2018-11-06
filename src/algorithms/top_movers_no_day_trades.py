@@ -25,11 +25,13 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         Algorithm.__init__(self, query, sec_interval, name = "TopMoversNoDayTradesAlgorithm")
 
         # Properties
-        self.buys_allowed = 10
-        self.sells_allowed = 10
-        self.cancels_allowed = 20
+        self.buy_list = []          # List of stocks bought in the current day
+        self.sell_list = []         # List of stocks sold in the current day
+        self.price_limit = 10.00    # Dollar limit for the maximum price of stocks to buy
+        self.buys_allowed = 30      # Number of buys allowed per day
+        self.sells_allowed = 30     # Number of sells allowed per day
 
-        self.weights_trading_algorithm()
+        self.perform_buy_sell()
 
     #
     # Event Functions
@@ -41,13 +43,15 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def market_will_open(self):
         Algorithm.market_will_open(self)
 
-        self.weights_trading_algorithm()
+        self.perform_buy_sell()
         pass
 
     # on_market_open:Void
     # NOTE: Called exactly when the market opens. Cannot include a buy or sell.
     def on_market_open(self):
         Algorithm.on_market_open(self)
+
+        self.perform_buy_sell()
         pass
 
     # on_market_close:Void
@@ -55,24 +59,24 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def on_market_close(self):
         Algorithm.on_market_close(self)
 
-        self.weights_trading_algorithm()
+        self.perform_buy_sell()
         pass
 
     #
     # Algorithm
     #
 
-    # weights_trading_algorithm:Void
+    # perform_buy_sell:Void
     # NOTE: Algorithm works like this:
     #   - Assign "purchase propensities" depending on the following criteria:
     #   - ROUND 1: Concavity of price graph
     #   - ROUND 2: Most recent rate of change in the price graph
-    #   - ROUND 3: Price of the stock
+    #   - ROUND 3: Last closing price of the stock
     #   - Sell bottom 2/3 of performers
     #   - Buy top 1/3 of performers by ratio
-    def weights_trading_algorithm(self):
+    def perform_buy_sell(self):
 
-        Utility.log("Executing weights_trading_algorithm:")
+        Utility.log("Executing perform_buy_sell:")
 
         # The percentage of the user's total equity to use for this algorithm
         USER_CASH_PERCENTAGE = 0.6
@@ -88,21 +92,23 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         Utility.log("Round 3 weight: " + str(ROUND_3_WEIGHT))
 
         # Query for all top moving symbols
-        all_watched_symbols = self.query.get_by_tag(Tag.TOP_MOVERS)
+        symbols_to_analyze = self.query.get_by_tag(Tag.TOP_MOVERS)
+
+        # Remove the symbols with bid prices greater than the price_limit
+        symbols_to_analyze = [ symbol for symbol in symbols_to_analyze if self.query.get_current_bid_price(symbol) < self.price_limit ]
 
         # Store the quantities of each owned stock and update the quantity of shares owned per stock into the map
         user_portfolio = self.query.user_stock_portfolio()
         symbol_quantity_map = {}
-        for symbol in all_watched_symbols:
+        for symbol in symbols_to_analyze:
             symbol_quantity_map[symbol] = 0.0
         for stock in user_portfolio:
             symbol_quantity_map[stock['symbol']] = float(stock['quantity']) or 0.0
-            all_watched_symbols.append(stock['symbol'])
+            symbols_to_analyze.append(stock['symbol'])
 
         # Store symbol count
-        symbol_count = len(all_watched_symbols)
-
-        # Store tuples for symbols to multiple different values
+        symbol_count = len(symbols_to_analyze)
+# Store tuples for symbols to multiple different values
         # symbol: quintuple
         symbol_quintuple_map = {}
         # (symbol, quintuple)
@@ -118,7 +124,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         symbol_purchase_propensity = {}
 
         # Loop through symbols
-        for symbol in all_watched_symbols:
+        for symbol in symbols_to_analyze:
 
             # Default purchase propensity = 0
             symbol_purchase_propensity[symbol] = 0
@@ -193,13 +199,12 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         Utility.log("Bad performers: " + str(bad_performer_list))
 
         # Sell each poor performer
-        for pair in bad_performer_list:
-            symbol = pair[0]
-            quantity = symbol_quantity_map[symbol]
-            limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
-            if quantity > 0.0:
-                Utility.log("Selling " + str(quantity) + " shares of " + symbol + " with limit " + str(limit))
-                self.safe_sell(symbol, quantity, limit=limit)
+        # for pair in bad_performer_list:
+        #     symbol = pair[0]
+        #     quantity = symbol_quantity_map[symbol]
+        #     limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
+        #     if quantity > 0.0:
+        #         did_sell = self.safe_sell(symbol, quantity, limit=limit)
 
         #
         # Second Execution - Buy top 1/4 performers
@@ -224,14 +229,14 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
             pass
 
         # Buy each good performer
-        for triple in good_performer_list:
-            symbol = triple[0]
-            quantity = round(triple[2] / symbol_quintuple_map[symbol][-1][Quintuple.HIGH.value])
-            limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
-            if quantity > 0.0:
-                self.safe_buy(symbol, quantity, limit=limit)
+        # for triple in good_performer_list:
+        #     symbol = triple[0]
+        #     quantity = round(triple[2] / symbol_quintuple_map[symbol][-1][Quintuple.HIGH.value])
+        #     limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
+        #     if quantity > 0.0:
+        #         did_buy = self.safe_buy(symbol, quantity, limit=limit)
 
-        Utility.log("Finished run of weights_trading_algorithm")
+        Utility.log("Finished run of perform_buy_sell")
 
 
     #
@@ -247,18 +252,21 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def safe_buy(self, symbol, quantity, stop = None, limit = None):
         now = Utility.now_datetime64()
         try:
-            if self.buys_allowed > 0 and (now < self.open_hour or now > self.close_hour):
+            if self.buys_allowed > 0 and symbol not in self.buy_list:
                 self.query.exec_buy(symbol, quantity, stop, limit)
                 self.buys_allowed -= 1
+                self.buy_list.append(symbol)
                 Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 return True
             else:
                 if self.buys_allowed == 0:
-                    Utility.log("Could not buy " + symbol + ": Ran out of buys allowed")
+                    Utility.error("Could not buy " + symbol + ": Ran out of buys allowed")
                 elif now >= self.open_hour and now <= self.close_hour:
-                    Utility.log("Could not buy " + symbol + ": Inside market hours")
-        except:
-            Utility.log("Could not buy " + symbol + ": A client error occurred")
+                    Utility.error("Could not buy " + symbol + ": Inside market hours")
+                elif symbol in self.buy_list:
+                    Utility.error("Could not buy " + symbol + ": Stock already bought today")
+        except Exception as e:
+            Utility.error("Could not buy " + symbol + ": " + str(e))
         return False
 
 
@@ -271,18 +279,21 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def safe_sell(self, symbol, quantity, stop = None, limit = None):
         now = Utility.now_datetime64()
         try:
-            if self.sells_allowed > 0 and (now < self.open_hour or now > self.close_hour):
+            if self.sells_allowed > 0 and symbol not in self.sell_list:
                 self.query.exec_sell(symbol, quantity, stop, limit)
                 self.sells_allowed -= 1
+                self.sell_list.append(symbol)
                 Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 return True
             else:
                 if self.sells_allowed == 0:
-                    Utility.log("Could not sell " + symbol + ": Ran out of sells allowed")
+                    Utility.error("Could not sell " + symbol + ": Ran out of sells allowed")
                 elif now >= self.open_hour and now <= self.close_hour:
-                    Utility.log("Could not sell " + symbol + ": Inside market hours")
-        except:
-            Utility.log("Could not sell " + symbol + ": A client error occurred")
+                    Utility.error("Could not sell " + symbol + ": Inside market hours")
+                elif symbol in self.sell_list:
+                    Utility.error("Could not sell " + symbol + ": Stock already sold today")
+        except Exception as e:
+            Utility.error("Could not sell " + symbol + ": " + str(e))
         return False
 
 
@@ -292,7 +303,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def safe_cancel(self, order_id):
         now = Utility.now_datetime64()
         try:
-            if self.cancels_allowed > 0 and (now < self.open_hour or now > self.close_hour):
+            if self.cancels_allowed > 0:
                 self.query.exec_cancel(order_id)
                 self.cancels_allowed -= 1
                 Utility.log("Cancelled order " + order_id)

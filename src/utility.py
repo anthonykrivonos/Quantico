@@ -9,6 +9,7 @@ import sys
 import re, datetime
 from time import sleep
 import threading
+from termcolor import colored
 
 # Matplotlib
 import matplotlib as mpl
@@ -28,12 +29,26 @@ from enums import *
 # Utility Methods
 class Utility:
 
-    # log:String
+    # log:Void
     # param message:String => Message to log.
     # NOTE: Prints a log message with time.
     @staticmethod
     def log(message):
-        print(str(Utility.now_datetime64()) + ": " + message)
+        print(colored(str(Utility.now_datetime64()) + "L: " + message, 'white'))
+
+    # error:Void
+    # param message:String => Message to log as an error.
+    # NOTE: Prints an error message with time.
+    @staticmethod
+    def error(message):
+        print(colored(str(Utility.now_datetime64()) + "E: " + message, 'red'))
+
+    # warning:Void
+    # param message:String => Message to log as a warning.
+    # NOTE: Prints a warning message with time.
+    @staticmethod
+    def warning(message):
+        print(colored(str(Utility.now_datetime64()) + "W: " + message, 'yellow'))
 
     # get_date_string:String
     # param date:datetime => Date to be converted into a string.

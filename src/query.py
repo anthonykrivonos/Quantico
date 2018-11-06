@@ -12,6 +12,7 @@ from datetime import date
 from Robinhood import Robinhood
 
 from enums import *
+from utility import *
 
 # Query Class
 class Query:
@@ -22,6 +23,7 @@ class Query:
     def __init__(self, email, password):
         self.trader = Robinhood()
         self.trader.login(username=email, password=password)
+
 
     ##           ##
     #   Getters   #
@@ -86,6 +88,12 @@ class Query:
     # returns Quotes for the given tag.
     def get_by_tag(self, tag):
         return self.trader.get_tickers_by_tag(tag.value)
+
+    # get_current_bid_price:Float
+    # param symbol:String => String symbol of the quote.
+    # returns The current bid price of the stock, as a float.
+    def get_current_bid_price(self, symbol):
+        return float(self.trader.get_quote(symbol)['bid_price']) or 0.0
 
     ##                ##
     #   User Methods   #
