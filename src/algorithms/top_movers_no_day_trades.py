@@ -27,9 +27,9 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         # Properties
         self.buy_list = []          # List of stocks bought in the current day
         self.sell_list = []         # List of stocks sold in the current day
-        self.price_limit = 20.00    # Dollar limit for the maximum price of stocks to buy
-        self.buys_allowed = 30      # Number of buys allowed per day
-        self.sells_allowed = 30     # Number of sells allowed per day
+        self.price_limit = 30.00    # Dollar limit for the maximum price of stocks to buy
+        self.buys_allowed = 20      # Number of buys allowed per day
+        self.sells_allowed = 20     # Number of sells allowed per day
 
         self.perform_buy_sell()
 
@@ -110,8 +110,8 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
 
         # Weight of each round of propensity calculation
         ROUND_1_WEIGHT = 1.1
-        ROUND_2_WEIGHT = 1.9
-        ROUND_3_WEIGHT = 1.2
+        ROUND_2_WEIGHT = 1.7
+        ROUND_3_WEIGHT = 1.3
 
         Utility.log("Cash percentage: " + str(USER_CASH_PERCENTAGE))
         Utility.log("Round 1 weight: " + str(ROUND_1_WEIGHT))
@@ -226,12 +226,12 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         Utility.log("Bad performers: " + str(bad_performer_list))
 
         # Sell each poor performer
-        # for pair in bad_performer_list:
-        #     symbol = pair[0]
-        #     quantity = symbol_quantity_map[symbol]
-        #     limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
-        #     if quantity > 0.0:
-        #         did_sell = self.safe_sell(symbol, quantity, limit=limit)
+        for pair in bad_performer_list:
+            symbol = pair[0]
+            quantity = symbol_quantity_map[symbol]
+            limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
+            if quantity > 0.0:
+                did_sell = self.safe_sell(symbol, quantity, limit=limit)
 
         #
         # Second Execution - Buy top 1/4 performers
@@ -256,12 +256,12 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
             pass
 
         # Buy each good performer
-        # for triple in good_performer_list:
-        #     symbol = triple[0]
-        #     quantity = round(triple[2] / symbol_quintuple_map[symbol][-1][Quintuple.HIGH.value])
-        #     limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
-        #     if quantity > 0.0:
-        #         did_buy = self.safe_buy(symbol, quantity, limit=limit)
+        for triple in good_performer_list:
+            symbol = triple[0]
+            quantity = round(triple[2] / symbol_quintuple_map[symbol][-1][Quintuple.HIGH.value])
+            limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
+            if quantity > 0.0:
+                did_buy = self.safe_buy(symbol, quantity, limit=limit)
 
         Utility.log("Finished run of perform_buy_sell")
 
