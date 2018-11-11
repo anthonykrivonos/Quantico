@@ -8,6 +8,7 @@ import re, datetime
 from time import sleep
 import threading
 from termcolor import colored
+import random
 
 # Matplotlib
 import matplotlib as mpl
@@ -100,14 +101,14 @@ class Utility:
     def iso_to_datetime(dateString):
         return datetime.datetime(*map(int, re.split('[^\d]', dateString)[:-1]))
 
-    # get_close_quadruple:(time, open, close, high, low) (static)
+    # get_quote_quintuple:(time, open, close, high, low) (static)
     # param quoteDict:String => A single quote dictionary returned from get_history(...)['historicals'] in Query.
     # returns A quintuple containing (time, open, close, high, low).
     @staticmethod
     def get_quote_quintuple(quoteDict):
         return (mpl.dates.date2num(Utility.iso_to_datetime(quoteDict['begins_at'])), float(quoteDict['open_price']), float(quoteDict['close_price']), float(quoteDict['high_price']), float(quoteDict['low_price']))
 
-    # get_close_quadruple:(time, open, close, high, low) (static)
+    # get_quintuples_from_historicals:(time, open, close, high, low) (static)
     # param historicals:[String:Any] => A historicals dict from the Query class.
     # returns A list of quintuples containing (time, open, close, high, low).
     @staticmethod
@@ -120,38 +121,6 @@ class Utility:
     @staticmethod
     def dt64_to_datetime(dt64):
         return datetime.datetime.fromtimestamp(dt64.astype('O')/1e9)
-
-    # plot_historicals:Void (static)
-    # param historicals:String => Raw dictionary returned from get_history(...) method in Query.
-    # param is_candlestick_chart:Boolean => If true, plots a candlestick plot. Else, plots a line plot.
-    @staticmethod
-    def plot_historicals(historicals, is_candlestick_chart = True):
-        quotes = Utility.get_quintuples_from_historicals(historicals)
-
-        fig, ax = plt.subplots(figsize=(8, 5))
-        fig.subplots_adjust(bottom=0.2)
-
-        if is_candlestick_chart:
-            mpf.candlestick_ochl(ax, quotes, width=0.1, colorup="#20CE99", colordown="#F4542F")
-        else:
-            closes = list(map(lambda quote: quote[2], quotes))
-            dates = list(map(lambda quote: quote[0], quotes))
-            ax.plot(dates, closes)
-
-        for label in ax.xaxis.get_ticklabels():
-
-            ax.xaxis.set_major_formatter(mpl.dates.DateFormatter('%Y-%m-%d'))
-            ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator(10))
-            ax.grid(True)
-
-            plt.xlabel('Date')
-            plt.ylabel('Price')
-            plt.title(historicals['symbol'])
-            plt.subplots_adjust(left=0.09, bottom=0.20, right=0.94, top=0.90, wspace=0.2, hspace=0)
-
-            label.set_rotation(45)
-
-        plt.show()
 
     # sleep_then_execute:Void
     # param time:String|datetime => If string, must look like "hh:mm". Otherwise, a datetime to wait until.
@@ -203,7 +172,6 @@ class Utility:
         t.start()
         return t
 
-
     # get_next_market_hours:(datetime?, datetime?)
     # returns Datetime tuple with (next_market_open_datetime, next_market_close_datetime)
     @staticmethod
@@ -226,3 +194,10 @@ class Utility:
             end_time = end_times[1]
 
         return (Utility.dt64_to_datetime(start_time), Utility.dt64_to_datetime(end_time))
+
+    # get_random_hex:String
+    # returns Returns a random hexidecimal value with leading pound symbol.
+    @staticmethod
+    def get_random_hex():
+        rand = lambda: random.randint(0,255)
+        return ('#%02X%02X%02X' % (rand(), rand(), rand()))

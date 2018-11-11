@@ -113,39 +113,8 @@ class Query:
         for data in user_portfolio:
             symbol = data['symbol']
             count = float(data['quantity'])
-            quantities.append(Quote(symbol, count))
-        return Portfolio(self, quantities)
-
-    # user_portfolio_historical_symbols:[String]
-    # returns A list of string symbols the user ever owned.
-    def user_portfolio_historical_symbols(self):
-        return list(map(lambda quote: quote['symbol'], self.user_portfolio_detailed()))
-
-    # user_portfolio_symbols:[String]
-    # returns A list of string symbols the user currently owns.
-    def user_portfolio_symbols(self):
-        symbols = []
-        quotes = self.user_portfolio_detailed()
-        for quote in quotes:
-            if float(quote['quantity']) > 0.0:
-                symbols.append(quote['symbol'])
-        return symbols
-
-    # user_symbols_to_weights:[String:Float]
-    # returns A dict mapping string symbols to weights or ratios of asset quantity over total (that all add up to 1).
-    def user_symbols_to_weights(self):
-        total_assets = 0
-        portfolio_weights = {}
-        user_portfolio = self.user_portfolio_detailed()
-        for data in user_portfolio:
-            quantity = data['quantity']
-            symbol = data['symbol']
-            if quantity is not None and symbol is not None and float(quantity) > 0:
-                portfolio_weights[symbol] = float(quantity)
-                total_assets += float(quantity)
-        for symbol, quantity in portfolio_weights.items():
-            portfolio_weights[symbol] = quantity / total_assets
-        return portfolio_weights
+            quotes.append(Quote(symbol, count))
+        return Portfolio(self, quotes, 'User Portfolio')
 
     # user_portfolio:[String:String]
     # returns Positions for the logged in user.

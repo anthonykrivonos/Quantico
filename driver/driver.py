@@ -41,7 +41,6 @@ except Exception as e:
 # Run algorithm
 # TopMoversNoDayTradesAlgorithm(query)
 
-user_portfolio = query.user_portfolio_symbols()
 #
 # stock = user_portfolio[0]
 #
@@ -50,3 +49,7 @@ user_portfolio = query.user_portfolio_symbols()
 # print(stock + ": " + str(quintuples))
 
 my_port = query.user_portfolio()
+their_port = Portfolio(query, [Quote("AAPL", 0), Quote("GOOG", 0)], "Cool Port")
+
+their_port.plot(True, True)
+# my_port.plot(False, True)

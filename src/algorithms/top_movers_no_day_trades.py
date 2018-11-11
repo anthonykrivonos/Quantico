@@ -128,7 +128,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         symbols_to_analyze = [ symbol for symbol in symbols_to_analyze if self.query.get_current_bid_price(symbol) < self.price_limit ]
 
         # Store the quantities of each owned stock and update the quantity of shares owned per stock into the map
-        user_portfolio = self.query.user_portfolio_detailed()
+        user_portfolio = []#self.query.user_portfolio_detailed()
         symbol_quantity_map = {}
         for symbol in symbols_to_analyze:
             symbol_quantity_map[symbol] = 0.0
