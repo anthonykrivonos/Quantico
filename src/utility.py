@@ -203,6 +203,7 @@ class Utility:
         t.start()
         return t
 
+
     # get_next_market_hours:(datetime?, datetime?)
     # returns Datetime tuple with (next_market_open_datetime, next_market_close_datetime)
     @staticmethod

@@ -24,12 +24,15 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         # Call super.__init__
         Algorithm.__init__(self, query, sec_interval, name = "TopMoversNoDayTradesAlgorithm")
 
+        # Constants
+        self.ENABLE_EXECUTIONS = False  # If False, market executions (buy, sell) won't go through
+
         # Properties
-        self.buy_list = []          # List of stocks bought in the current day
-        self.sell_list = []         # List of stocks sold in the current day
-        self.price_limit = 30.00    # Dollar limit for the maximum price of stocks to buy
-        self.buys_allowed = 20      # Number of buys allowed per day
-        self.sells_allowed = 20     # Number of sells allowed per day
+        self.buy_list = []              # List of stocks bought in the current day
+        self.sell_list = []             # List of stocks sold in the current day
+        self.price_limit = 30.00        # Dollar limit for the maximum price of stocks to buy
+        self.buys_allowed = 20          # Number of buys allowed per day
+        self.sells_allowed = 20         # Number of sells allowed per day
 
         self.perform_buy_sell()
 
@@ -125,7 +128,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         symbols_to_analyze = [ symbol for symbol in symbols_to_analyze if self.query.get_current_bid_price(symbol) < self.price_limit ]
 
         # Store the quantities of each owned stock and update the quantity of shares owned per stock into the map
-        user_portfolio = self.query.user_stock_portfolio()
+        user_portfolio = self.query.user_portfolio_detailed()
         symbol_quantity_map = {}
         for symbol in symbols_to_analyze:
             symbol_quantity_map[symbol] = 0.0
@@ -158,6 +161,9 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
 
             # Get historicals over past week
             symbol_historical = self.query.get_history(symbol, Span.TEN_MINUTE, Span.WEEK)
+
+            print(str(symbol_historical))
+            print("\n")
 
             # Get historical quintuples per symbol
             quintuples = Utility.get_quintuples_from_historicals(symbol_historical)
@@ -277,6 +283,8 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     # param limit:Number? => Sets a limit price on the buy, if not None.
     # NOTE: Safely executes a buy order outside of open hours, if possible.
     def safe_buy(self, symbol, quantity, stop = None, limit = None):
+        if self.ENABLE_EXECUTIONS:
+            return
         now = Utility.now_datetime64()
         try:
             if len(self.buy_list) < self.buys_allowed and symbol not in self.buy_list:
@@ -303,6 +311,8 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     # param limit:Number? => Sets a limit price on the sell, if not None.
     # NOTE: Safely executes a sell order outside of open hours, if possible.
     def safe_sell(self, symbol, quantity, stop = None, limit = None):
+        if self.ENABLE_EXECUTIONS:
+            return
         now = Utility.now_datetime64()
         try:
             if len(self.sell_list) < self.sells_allowed and symbol not in self.sell_list:
@@ -326,6 +336,8 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     # param order_id:String => ID of the order to cancel.
     # NOTE: Safely cancels an order given its ID, if possible.
     def safe_cancel(self, order_id):
+        if self.ENABLE_EXECUTIONS:
+            return
         now = Utility.now_datetime64()
         try:
             if self.cancels_allowed > 0:

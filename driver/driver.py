@@ -15,6 +15,7 @@ from query import *
 from utility import *
 from enums import *
 from algorithms import *
+from models import *
 
 # Plotting
 import numpy as np
@@ -38,4 +39,14 @@ except Exception as e:
     sys.exit()
 
 # Run algorithm
-TopMoversNoDayTradesAlgorithm(query)
+# TopMoversNoDayTradesAlgorithm(query)
+
+user_portfolio = query.user_portfolio_symbols()
+#
+# stock = user_portfolio[0]
+#
+# quintuples = Utility.get_quintuples_from_historicals(query.get_history(user_portfolio[0]))
+#
+# print(stock + ": " + str(quintuples))
+
+my_port = query.user_portfolio()
