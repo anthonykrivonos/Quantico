@@ -125,6 +125,11 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
             symbols_to_analyze.append(quote.symbol)
             symbol_quantity_map[quote.symbol] = quote.count
 
+        for symbol in self.query.get_by_tag(Tag.TOP_MOVERS):
+            if symbol not in symbol_quantity_map:
+                symbols_to_analyze.append(symbol)
+                symbol_quantity_map[symbol] = 0
+
         # Store symbol count
         symbol_count = len(symbols_to_analyze)
 
@@ -273,7 +278,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def safe_buy(self, symbol, quantity, stop = None, limit = None):
         now = Utility.now_datetime64()
         try:
-            if len(self.buy_list) < self.buys_allowed and symbol not in self.buy_list and symbol not in self.sell_list:
+            if limit < self.price_limit and len(self.buy_list) < self.buys_allowed and symbol not in self.buy_list and symbol not in self.sell_list:
                 self.query.exec_buy(symbol, quantity, stop, limit)
                 self.buy_list.append(symbol)
                 Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
