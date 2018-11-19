@@ -19,13 +19,14 @@ class Algorithm:
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
     # param name:String => Name of the algorithm.
-    def __init__(self, query, sec_interval = 900, name = "Algorithm"):
+    def __init__(self, query, portfolio, sec_interval = 900, name = "Algorithm"):
 
         Utility.log("Initialized Algorithm: \'" + name + "\'")
 
         # Initialize properties
         self.name = name
         self.query = query
+        self.portfolio = portfolio
         self.sec_interval = sec_interval
 
         # Initialize the algorithm

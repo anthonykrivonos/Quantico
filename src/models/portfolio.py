@@ -83,7 +83,7 @@ class Portfolio:
     # param quoteOrSymbol:Quote => A quote object or symbol string to remove from the portfolio, if it exists.
     def remove_quote(self, quote_or_symbol):
         for i, q in enumerate(self.__quotes):
-            if (isinstance(quote_or_symbol, Quote) && q.symbol == quote.symbol) or quote_or_symbol == q.symbol:
+            if (isinstance(quote_or_symbol, Quote) and q.symbol == quote.symbol) or quote_or_symbol == q.symbol:
                 self.__quotes.remove(i)
                 self.update_assets()
                 return
@@ -105,7 +105,10 @@ class Portfolio:
     #
     ##
 
-
+    # get_quotes:[Quote]
+    # Returns a list of quote objects in the portfolio.
+    def get_quotes(self):
+        return self.__quotes
 
     # get_history:[[Price]]
     # param symbol:String => String symbol of the instrument.
@@ -129,6 +132,18 @@ class Portfolio:
         historicals = self.__query.get_history(symbol, interval, span, bounds)['historicals']
         historicals = list(map(lambda h: Price(mpl.dates.date2num(Utility.iso_to_datetime(h['begins_at'])), float(h['open_price']), float(h['close_price']), float(h['high_price']), float(h['low_price'])), historicals))
         return historicals
+
+    # get_portfolio_history:[Price]
+    # param symbol:String => String symbol of the instrument.
+    # param interval:Span => Time in between each value. (default: DAY)
+    # param span:Span => Range for the data to be returned. (default: YEAR)
+    # param bounds:Span => The bounds to be included. (default: REGULAR)
+    # returns Map of Price model symbols to price tuples.
+    def get_portfolio_history(self, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
+        portfolio_history = {}
+        for quote in quotes:
+            portfolio_history[quote.symbol] = quote.price.as_tuple()
+        return portfolio_history
 
     # get_symbol_history_data:DataFrame
     # param symbol:String => String symbol of the instrument.

@@ -38,18 +38,8 @@ except Exception as e:
     Utility.error("Could not log in: " + str(e))
     sys.exit()
 
-# Run algorithm
-# TopMoversNoDayTradesAlgorithm(query)
-
-#
-# stock = user_portfolio[0]
-#
-# quintuples = Utility.get_quintuples_from_historicals(query.get_history(user_portfolio[0]))
-#
-# print(stock + ": " + str(quintuples))
-
 my_port = query.user_portfolio()
-their_port = Portfolio(query, [Quote("AAPL", 0), Quote("GOOG", 0)], "Cool Port")
+# their_port = Portfolio(query, [Quote("AAPL", 0), Quote("GOOG", 0)], "Cool Port")
 
-their_port.plot(True, True)
-# my_port.plot(False, True)
+# Run algorithm
+TopMoversNoDayTradesAlgorithm(query, my_port)

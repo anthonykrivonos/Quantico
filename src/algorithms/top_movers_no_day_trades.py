@@ -19,20 +19,17 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     # __init__:Void
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
-    def __init__(self, query, sec_interval = 900):
+    def __init__(self, query, portfolio, sec_interval = 900):
 
         # Call super.__init__
-        Algorithm.__init__(self, query, sec_interval, name = "TopMoversNoDayTradesAlgorithm")
-
-        # Constants
-        self.ENABLE_EXECUTIONS = False  # If False, market executions (buy, sell) won't go through
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Top Movers, No Day Trades")
 
         # Properties
-        self.buy_list = []              # List of stocks bought in the current day
-        self.sell_list = []             # List of stocks sold in the current day
-        self.price_limit = 30.00        # Dollar limit for the maximum price of stocks to buy
-        self.buys_allowed = 20          # Number of buys allowed per day
-        self.sells_allowed = 20         # Number of sells allowed per day
+        self.buy_list = []          # List of stocks bought in the current day
+        self.sell_list = []         # List of stocks sold in the current day
+        self.price_limit = 5.00     # Dollar limit for the maximum price of stocks to buy
+        self.buys_allowed = 2000    # Number of buys allowed per day
+        self.sells_allowed = 2000   # Number of sells allowed per day
 
         self.perform_buy_sell()
 
@@ -121,24 +118,18 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         Utility.log("Round 2 weight: " + str(ROUND_2_WEIGHT))
         Utility.log("Round 3 weight: " + str(ROUND_3_WEIGHT))
 
-        # Query for all top moving symbols
-        symbols_to_analyze = self.query.get_by_tag(Tag.TOP_MOVERS)
-
-        # Remove the symbols with bid prices greater than the price_limit
-        symbols_to_analyze = [ symbol for symbol in symbols_to_analyze if self.query.get_current_bid_price(symbol) < self.price_limit ]
-
-        # Store the quantities of each owned stock and update the quantity of shares owned per stock into the map
-        user_portfolio = []#self.query.user_portfolio_detailed()
+        symbols_to_analyze = []
         symbol_quantity_map = {}
-        for symbol in symbols_to_analyze:
-            symbol_quantity_map[symbol] = 0.0
-        for stock in user_portfolio:
-            symbol_quantity_map[stock['symbol']] = float(stock['quantity']) or 0.0
-            symbols_to_analyze.append(stock['symbol'])
+
+        for quote in self.portfolio.get_quotes():
+            symbols_to_analyze.append(quote.symbol)
+            symbol_quantity_map[quote.symbol] = quote.count
 
         # Store symbol count
         symbol_count = len(symbols_to_analyze)
-# Store tuples for symbols to multiple different values
+
+        # Store tuples for symbols to multiple different values
+
         # symbol: quintuple
         symbol_quintuple_map = {}
         # (symbol, quintuple)
@@ -161,9 +152,6 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
 
             # Get historicals over past week
             symbol_historical = self.query.get_history(symbol, Span.TEN_MINUTE, Span.WEEK)
-
-            print(str(symbol_historical))
-            print("\n")
 
             # Get historical quintuples per symbol
             quintuples = Utility.get_quintuples_from_historicals(symbol_historical)
@@ -283,11 +271,9 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     # param limit:Number? => Sets a limit price on the buy, if not None.
     # NOTE: Safely executes a buy order outside of open hours, if possible.
     def safe_buy(self, symbol, quantity, stop = None, limit = None):
-        if self.ENABLE_EXECUTIONS:
-            return
         now = Utility.now_datetime64()
         try:
-            if len(self.buy_list) < self.buys_allowed and symbol not in self.buy_list:
+            if len(self.buy_list) < self.buys_allowed and symbol not in self.buy_list and symbol not in self.sell_list:
                 self.query.exec_buy(symbol, quantity, stop, limit)
                 self.buy_list.append(symbol)
                 Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
@@ -299,6 +285,8 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
                     Utility.error("Could not buy " + symbol + ": Inside market hours")
                 elif symbol in self.buy_list:
                     Utility.error("Could not buy " + symbol + ": Stock already bought today")
+                elif symbol in self.sell_list:
+                    Utility.error("Could not buy " + symbol + ": Stock already sold today")
         except Exception as e:
             Utility.error("Could not buy " + symbol + ": " + str(e))
         return False
@@ -311,11 +299,9 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     # param limit:Number? => Sets a limit price on the sell, if not None.
     # NOTE: Safely executes a sell order outside of open hours, if possible.
     def safe_sell(self, symbol, quantity, stop = None, limit = None):
-        if self.ENABLE_EXECUTIONS:
-            return
         now = Utility.now_datetime64()
         try:
-            if len(self.sell_list) < self.sells_allowed and symbol not in self.sell_list:
+            if len(self.sell_list) < self.sells_allowed and symbol not in self.sell_list and symbol not in self.buy_list:
                 self.query.exec_sell(symbol, quantity, stop, limit)
                 self.sell_list.append(symbol)
                 Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
@@ -327,6 +313,8 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
                     Utility.error("Could not sell " + symbol + ": Inside market hours")
                 elif symbol in self.sell_list:
                     Utility.error("Could not sell " + symbol + ": Stock already sold today")
+                elif symbol in self.buy_list:
+                    Utility.error("Could not sell " + symbol + ": Stock already bought today")
         except Exception as e:
             Utility.error("Could not sell " + symbol + ": " + str(e))
         return False
@@ -336,8 +324,6 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     # param order_id:String => ID of the order to cancel.
     # NOTE: Safely cancels an order given its ID, if possible.
     def safe_cancel(self, order_id):
-        if self.ENABLE_EXECUTIONS:
-            return
         now = Utility.now_datetime64()
         try:
             if self.cancels_allowed > 0:
