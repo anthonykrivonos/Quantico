@@ -12,6 +12,9 @@ from utility import *
 from enums import *
 from mathematics import *
 
+# QuoteModel
+from models.quote import *
+
 # Abstract: Generic/abstract algorithm parent class.
 
 class Algorithm:
@@ -123,7 +126,11 @@ class Algorithm:
                 self.portfolio.add_quote(Quote(symbol, quantity))
                 return True
             else:
-                if symbol in self.buy_list:
+                if limit > self.buy_range[1]:
+                    Utility.error("Could not buy " + symbol + ": Stock too expensive")
+                elif limit < self.buy_range[0]:
+                    Utility.error("Could not buy " + symbol + ": Stock too cheap")
+                elif symbol in self.buy_list:
                     Utility.error("Could not buy " + symbol + ": Stock already bought today")
                 elif symbol in self.sell_list:
                     Utility.error("Could not buy " + symbol + ": Stock already sold today")

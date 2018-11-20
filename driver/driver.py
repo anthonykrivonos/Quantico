@@ -44,6 +44,8 @@ my_port = query.user_portfolio()
 # Run algorithm
 # TopMoversNoDayTradesAlgorithm(query, my_port)
 
-history = my_port.get_history()
-print(my_port.get_market_data_tuple())
+# history = my_port.get_history()
+# print(my_port.get_market_data_tuple())
 # print(history)
+
+print(my_port.sharpe_optimization())

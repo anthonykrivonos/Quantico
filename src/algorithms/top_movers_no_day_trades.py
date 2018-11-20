@@ -24,6 +24,9 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         # Call super.__init__
         Algorithm.__init__(self, query, portfolio, sec_interval, name = "Diversifier")
 
+        # Initialize properties
+        self.buy_range = (0.00, 5.00)
+
         self.perform_buy_sell()
 
     # initialize:void
@@ -31,27 +34,6 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def initialize(self):
 
         Algorithm.initialize(self)
-
-        # Refresh buy and sell lists
-        self.buy_list = []
-        self.sell_list = []
-
-        # Update buy list and sell list with today's orders
-        todays_orders = self.query.user_orders()['results'] or []
-        todays_buys = []
-        todays_sells = []
-        for order in todays_orders:
-            if order['side'] == Side.BUY.value:
-                todays_buys.append(order)
-            else:
-                todays_sells.append(order)
-        todays_buys = [ self.query.stock_from_instrument_url(order['instrument'])['symbol'] for order in todays_buys if Utility.iso_to_datetime(order['last_transaction_at']).date() == datetime.datetime.now().date() ]
-        todays_sells = [ self.query.stock_from_instrument_url(order['instrument'])['symbol'] for order in todays_sells if Utility.iso_to_datetime(order['last_transaction_at']).date() == datetime.datetime.now().date() ]
-        self.buy_list = todays_buys
-        self.sell_list = todays_sells
-
-        Utility.log('Today Bought: ' + str(self.buy_list))
-        Utility.log('Today Sold  : ' + str(self.sell_list))
 
     #
     # Event Functions

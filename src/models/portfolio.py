@@ -11,6 +11,9 @@ import pandas as pd
 # NumPy
 import numpy as np
 
+# SciPy
+import scipy.optimize as optimize
+
 # Enums
 from enums import *
 
@@ -19,6 +22,9 @@ from math import exp
 
 # PriceModel
 from models.price import *
+
+# QuoteModel
+from models.quote import *
 
 # Utility
 from utility import *
@@ -42,7 +48,7 @@ class Portfolio:
         self.__quotes = quotes
         self.__name = name
         self.__total_assets = 0
-        self.__expected_returns = 0
+        self.__expected_return = 0
         self.__covariance = 0
 
         # Update assets
@@ -66,10 +72,9 @@ class Portfolio:
         else:
             for quote in self.__quotes:
                 quote.weight = 0.0
-
         market_data = self.get_market_data_tuple()
-        self.__expected_returns = market_data[1]
-        self.__covariance = market_data[2]
+        self.__expected_return = market_data[1]        # Set portfolio return
+        self.__covariance = market_data[2]             # Set portfolio covariance
 
     ##
     #
@@ -122,6 +127,17 @@ class Portfolio:
     def get_quotes(self):
         return self.__quotes
 
+    # get_expected_return:[Quote]
+    # Returns a float percentage for the return of this portfolio.
+    def get_expected_return(self):
+        return self.__expected_return
+
+    # get_covariance:[Quote]
+    # Returns the float covariance of this portfolio.
+    # NOTE: - If > 0, the stocks in this portfolio are interrelated. Otherwise, not.
+    def get_covariance(self):
+        return self.__covariance
+
     # get_history:[String:[Price]]
     # param symbol:String => String symbol of the instrument.
     # param interval:Span => Time in between each value. (default: DAY)
@@ -169,21 +185,16 @@ class Portfolio:
             portfolio_history[quote.symbol] = quote.price.as_tuple()
         return portfolio_history
 
-    # get_symbol_history_data:DataFrame
+    # get_market_data_tuple:(dataFrame, float, float, [float], [float])
     # param symbol:String => String symbol of the instrument.
     # param interval:Span => Time in between each value. (default: DAY)
     # param span:Span => Range for the data to be returned. (default: YEAR)
     # param bounds:Span => The bounds to be included. (default: REGULAR)
-    # returns Pandas data frame with Price properties mapped by time.
-    def get_symbol_history_data(self, symbol, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
-        history = np.array(list(map(lambda price: price.values_as_array(), self.get_symbol_history(symbol, interval, span, bounds))))
-        return pd.DataFrame(history, columns=Price.props_as_array(), index=None)
-
-    # TODO: - Document
-    def get_market_data_tuple(self):
+    # returns A tuple containing (dataFrame, float, float, [float], [float]).
+    def get_market_data_tuple(self, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
 
         # Create dataFrame with times as rows, symbols as columns, and close prices as data
-        historicals = self.get_history()
+        historicals = self.get_history(interval, span, bounds)
         times = []
         close_prices = []
         weights = []
@@ -208,10 +219,72 @@ class Portfolio:
         returns = Math.get_returns(df, df.shift(1))
 
         # Portfolio's return
-        portfolio_returns = np.sum(returns.mean()*weights)*market_days
-        portfolio_covariance = np.sqrt(np.dot(np.transpose(weights), np.dot(returns.cov()*market_days, weights)))
+        portfolio_stats = self.get_portfolio_statistics(weights, returns)
+        portfolio_return = portfolio_stats[0]
+        portfolio_covariance = portfolio_stats[1]
 
-        return (df, portfolio_returns, portfolio_covariance, weights)
+        return (
+            df,
+            portfolio_return,
+            portfolio_covariance,
+            returns,
+            weights
+        )
+
+    # get_portfolio_statistics:(float, float)
+    # param weights:[float] => List of weights per quote, in order.
+    # param returns:[float] => List of returns per quote, in order.
+    # returns A tuple containing (portfolio_return, portfolio_covariance).
+    def get_portfolio_statistics(self, weights, returns):
+        returns_mean = returns.mean()
+        returns_cov = returns.cov()
+        market_days = len(returns)
+        portfolio_return = np.sum(returns.mean()*weights)*market_days
+        portfolio_covariance = np.sqrt(np.dot(np.transpose(weights), np.dot(returns.cov()*market_days, weights)))
+        return (portfolio_return, portfolio_covariance)
+
+    ##
+    #
+    #   MARK: - PORTFOLIO ANALYSIS
+    #
+    ##
+
+    # sharpe_optimization:([Quote], float, float)
+    # NOTE: - Optimizes according to the sharp ratio with the Markowitz Model.
+    # Returns A tuple with list of quotes with quantities that would produce the optimal portfolio for the given symbols, optimized return, and optimized covariance.
+    def sharpe_optimization(self):
+        quote_count = len(self.__quotes)
+
+        market_data = self.get_market_data_tuple()
+        returns = market_data[3]
+        market_days = len(returns)
+        portfolio_return = market_data[1]
+        portfolio_covariance = market_data[2]
+        weights = [ quote.weight for quote in self.__quotes ]
+
+        def min_sharpe_function(weights, returns):
+            cur_stats = self.get_portfolio_statistics(weights, returns)
+            return -cur_stats[0]/cur_stats[1]
+
+        # Optimization
+        constraints = ({ 'type': 'eq', 'fun': lambda x: np.sum(x) - 1 })
+        bounds = tuple((0, 1) for x in range(quote_count))
+
+        optimized_weights = optimize.minimize(fun=min_sharpe_function, x0=weights, args=returns, method='SLSQP', bounds=bounds, constraints=constraints)['x'].round(3)
+
+        optimized_quotes = []
+        for i, weight in enumerate(optimized_weights):
+            optimized_quotes.append(Quote(self.__quotes[i], weight*100, weight))
+
+        optimized_stats = self.get_portfolio_statistics(optimized_weights, returns)
+        optimized_return = optimized_stats[0]
+        optimized_covariance = optimized_stats[1]
+
+        return (
+            optimized_quotes,
+            optimized_return,
+            optimized_covariance
+        )
 
     ##
     #
