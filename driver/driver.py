@@ -42,4 +42,8 @@ my_port = query.user_portfolio()
 # their_port = Portfolio(query, [Quote("AAPL", 0), Quote("GOOG", 0)], "Cool Port")
 
 # Run algorithm
-TopMoversNoDayTradesAlgorithm(query, my_port)
+# TopMoversNoDayTradesAlgorithm(query, my_port)
+
+history = my_port.get_history()
+print(my_port.get_market_data_tuple())
+# print(history)

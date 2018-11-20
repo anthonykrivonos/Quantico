@@ -12,7 +12,7 @@ from enums import *
 from mathematics import *
 from algorithm import Algorithm
 
-# Abstract: Algorithm employing the no-day-trades tactic.
+# Abstract: Algorithm employing a top movers tactic.
 
 class TopMoversNoDayTradesAlgorithm(Algorithm):
 
@@ -22,14 +22,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def __init__(self, query, portfolio, sec_interval = 900):
 
         # Call super.__init__
-        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Top Movers, No Day Trades")
-
-        # Properties
-        self.buy_list = []          # List of stocks bought in the current day
-        self.sell_list = []         # List of stocks sold in the current day
-        self.price_limit = 5.00     # Dollar limit for the maximum price of stocks to buy
-        self.buys_allowed = 2000    # Number of buys allowed per day
-        self.sells_allowed = 2000   # Number of sells allowed per day
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Diversifier")
 
         self.perform_buy_sell()
 
@@ -230,7 +223,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
             quantity = symbol_quantity_map[symbol]
             limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
             if quantity > 0.0:
-                did_sell = self.safe_sell(symbol, quantity, limit=limit)
+                did_sell = Algorithm.sell(self, symbol, quantity, limit=limit)
 
         #
         # Second Execution - Buy top 1/4 performers
@@ -260,87 +253,6 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
             quantity = round(triple[2] / symbol_quintuple_map[symbol][-1][Quintuple.HIGH.value])
             limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
             if quantity > 0.0:
-                did_buy = self.safe_buy(symbol, quantity, limit=limit)
+                did_buy = Algorithm.buy(self, symbol, quantity, limit=limit)
 
         Utility.log("Finished run of perform_buy_sell")
-
-
-    #
-    # Execution Functions
-    #
-
-    # safe_buy:Void
-    # param symbol:String => String symbol of the instrument.
-    # param quantity:Number => Number of shares to execute buy for.
-    # param stop:Number? => Sets a stop price on the buy, if not None.
-    # param limit:Number? => Sets a limit price on the buy, if not None.
-    # NOTE: Safely executes a buy order outside of open hours, if possible.
-    def safe_buy(self, symbol, quantity, stop = None, limit = None):
-        now = Utility.now_datetime64()
-        try:
-            if limit < self.price_limit and len(self.buy_list) < self.buys_allowed and symbol not in self.buy_list and symbol not in self.sell_list:
-                self.query.exec_buy(symbol, quantity, stop, limit)
-                self.buy_list.append(symbol)
-                Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
-                return True
-            else:
-                if len(self.buy_list) == self.buys_allowed:
-                    Utility.error("Could not buy " + symbol + ": Ran out of buys allowed")
-                elif now >= self.open_hour and now <= self.close_hour:
-                    Utility.error("Could not buy " + symbol + ": Inside market hours")
-                elif symbol in self.buy_list:
-                    Utility.error("Could not buy " + symbol + ": Stock already bought today")
-                elif symbol in self.sell_list:
-                    Utility.error("Could not buy " + symbol + ": Stock already sold today")
-        except Exception as e:
-            Utility.error("Could not buy " + symbol + ": " + str(e))
-        return False
-
-
-    # safe_sell:Boolean
-    # param symbol:String => String symbol of the instrument.
-    # param quantity:Number => Number of shares to execute sell for.
-    # param stop:Number? => Sets a stop price on the sell, if not None.
-    # param limit:Number? => Sets a limit price on the sell, if not None.
-    # NOTE: Safely executes a sell order outside of open hours, if possible.
-    def safe_sell(self, symbol, quantity, stop = None, limit = None):
-        now = Utility.now_datetime64()
-        try:
-            if len(self.sell_list) < self.sells_allowed and symbol not in self.sell_list and symbol not in self.buy_list:
-                self.query.exec_sell(symbol, quantity, stop, limit)
-                self.sell_list.append(symbol)
-                Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
-                return True
-            else:
-                if len(self.sell_list) < self.sells_allowed:
-                    Utility.error("Could not sell " + symbol + ": Ran out of sells allowed")
-                elif now >= self.open_hour and now <= self.close_hour:
-                    Utility.error("Could not sell " + symbol + ": Inside market hours")
-                elif symbol in self.sell_list:
-                    Utility.error("Could not sell " + symbol + ": Stock already sold today")
-                elif symbol in self.buy_list:
-                    Utility.error("Could not sell " + symbol + ": Stock already bought today")
-        except Exception as e:
-            Utility.error("Could not sell " + symbol + ": " + str(e))
-        return False
-
-
-    # safe_cancel:Void
-    # param order_id:String => ID of the order to cancel.
-    # NOTE: Safely cancels an order given its ID, if possible.
-    def safe_cancel(self, order_id):
-        now = Utility.now_datetime64()
-        try:
-            if self.cancels_allowed > 0:
-                self.query.exec_cancel(order_id)
-                self.cancels_allowed -= 1
-                Utility.log("Cancelled order " + order_id)
-                return True
-            else:
-                if self.cancels_allowed == 0:
-                    Utility.log("Could not cancel order " + order_id + ": Ran out of cancels allowed")
-                elif now >= self.open_hour and now <= self.close_hour:
-                    Utility.log("Could not cancel order " + order_id + ": Inside market hours")
-        except:
-            Utility.log("Could not cancel " + symbol + ": A client error occurred")
-        return False

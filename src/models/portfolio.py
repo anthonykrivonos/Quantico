@@ -23,6 +23,9 @@ from models.price import *
 # Utility
 from utility import *
 
+# Mathematics
+from mathematics import *
+
 # Matplotlib
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -39,6 +42,8 @@ class Portfolio:
         self.__quotes = quotes
         self.__name = name
         self.__total_assets = 0
+        self.__expected_returns = 0
+        self.__covariance = 0
 
         # Update assets
         self.update_assets()
@@ -62,6 +67,10 @@ class Portfolio:
             for quote in self.__quotes:
                 quote.weight = 0.0
 
+        market_data = self.get_market_data_tuple()
+        self.__expected_returns = market_data[1]
+        self.__covariance = market_data[2]
+
     ##
     #
     #   MARK: - SETTERS
@@ -73,7 +82,7 @@ class Portfolio:
     def add_quote(self, quote):
         for i, q in enumerate(self.__quotes):
             if q.symbol == quote.symbol:
-                self.__quotes[i] = quote
+                self.__quotes[i].count += quote.count
                 self.update_assets()
                 return
         self.__quotes.append(quote)
@@ -84,7 +93,10 @@ class Portfolio:
     def remove_quote(self, quote_or_symbol):
         for i, q in enumerate(self.__quotes):
             if (isinstance(quote_or_symbol, Quote) and q.symbol == quote.symbol) or quote_or_symbol == q.symbol:
-                self.__quotes.remove(i)
+                if isinstance(quote_or_symbol, Quote) and quote_or_symbol.count > self.__quotes[i].count:
+                    self.__quotes[i].count -= quote_or_symbol.count
+                else:
+                    self.__quotes.remove(i)
                 self.update_assets()
                 return
 
@@ -110,17 +122,29 @@ class Portfolio:
     def get_quotes(self):
         return self.__quotes
 
-    # get_history:[[Price]]
+    # get_history:[String:[Price]]
     # param symbol:String => String symbol of the instrument.
     # param interval:Span => Time in between each value. (default: DAY)
     # param span:Span => Range for the data to be returned. (default: YEAR)
     # param bounds:Span => The bounds to be included. (default: REGULAR)
-    # returns List of Price models with the time, volume, open, close, high, low for each time in the interval.
-    def get_history_tuples(self, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
-        historicals = []
+    # returns Map of symbols to lists of Price models.
+    def get_history(self, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
+        historicals = {}
         for quote in self.__quotes:
-            historicals.append(list(map(lambda price: price.as_tuple(), self.get_symbol_history(quote.symbol, interval, span, bounds))))
+            historicals[quote.symbol] = list(map(lambda price: price, self.get_symbol_history(quote.symbol, interval, span, bounds)))
         return historicals
+
+    # get_history_tuples:[[(time, open, close, high, low)]]
+    # param symbol:String => String symbol of the instrument.
+    # param interval:Span => Time in between each value. (default: DAY)
+    # param span:Span => Range for the data to be returned. (default: YEAR)
+    # param bounds:Span => The bounds to be included. (default: REGULAR)
+    # returns List of price tuples with the time, volume, open, close, high, low for each time in the interval.
+    def get_history_tuples(self, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
+        history = self.get_history(interval, span, bounds)
+        for symbol in history:
+            history[symbol] = [ quote.as_tuple() for quote in history[quote] ]
+        return history
 
     # get_symbol_history:[Price]
     # param symbol:String => String symbol of the instrument.
@@ -154,6 +178,40 @@ class Portfolio:
     def get_symbol_history_data(self, symbol, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
         history = np.array(list(map(lambda price: price.values_as_array(), self.get_symbol_history(symbol, interval, span, bounds))))
         return pd.DataFrame(history, columns=Price.props_as_array(), index=None)
+
+    # TODO: - Document
+    def get_market_data_tuple(self):
+
+        # Create dataFrame with times as rows, symbols as columns, and close prices as data
+        historicals = self.get_history()
+        times = []
+        close_prices = []
+        weights = []
+        market_days = 0
+        for quote in self.__quotes:
+            t = []
+            close_prices = []
+            for price in historicals[quote.symbol]:
+                if len(times) is 0:
+                    t.append(price.time)
+                close_prices.append(price.close)
+            if len(times) is 0:
+                times = t
+                time_filled = True
+                market_days = len(times)
+            historicals[quote.symbol] = close_prices
+            weights.append(quote.weight)
+        df = pd.DataFrame(historicals)
+        df.index = times
+
+        # Calculate the returns for the given data
+        returns = Math.get_returns(df, df.shift(1))
+
+        # Portfolio's return
+        portfolio_returns = np.sum(returns.mean()*weights)*market_days
+        portfolio_covariance = np.sqrt(np.dot(np.transpose(weights), np.dot(returns.cov()*market_days, weights)))
+
+        return (df, portfolio_returns, portfolio_covariance, weights)
 
     ##
     #
