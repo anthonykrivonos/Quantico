@@ -22,7 +22,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     def __init__(self, query, portfolio, sec_interval = 900):
 
         # Call super.__init__
-        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Diversifier")
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Top Movers, No Day Trades")
 
         # Initialize properties
         self.buy_range = (0.00, 5.00)
@@ -40,10 +40,10 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     #
 
 
-    # market_will_open:Void
+    # on_market_will_open:Void
     # NOTE: Called an hour before the market opens.
-    def market_will_open(self):
-        Algorithm.market_will_open(self)
+    def on_market_will_open(self):
+        Algorithm.on_market_will_open(self)
 
         self.perform_buy_sell()
         pass

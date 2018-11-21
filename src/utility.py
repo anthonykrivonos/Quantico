@@ -132,12 +132,12 @@ class Utility:
         Utility.set_interval(sec, lambda: action(), time, None)
 
     # execute_between_times:Void
+    # param action:lambda Function => The function to execute on the secInterval before the time is reached.
     # param start_time:datetime|None => The datetime for the execution to begin.
     # param stop_time:datetime|None => The datetime for the execution to end.
-    # param action:lambda Function => The function to execute on the secInterval before the time is reached.
     # param sec:Integer => The number of seconds until the sleep condition is checked again.
     @staticmethod
-    def execute_between_times(start_time, stop_time, action, sec = 60):
+    def execute_between_times(action, start_time = None, stop_time = None, sec = 60):
         Utility.set_interval(sec, lambda: action(), start_time, stop_time)
 
     # set_interval:Timer

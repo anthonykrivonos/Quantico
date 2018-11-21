@@ -38,10 +38,10 @@ class DiversifierAlgorithm(Algorithm):
     #
 
 
-    # market_will_open:Void
+    # on_market_will_open:Void
     # NOTE: Called an hour before the market opens.
-    def market_will_open(self):
-        Algorithm.market_will_open(self)
+    def on_market_will_open(self):
+        Algorithm.on_market_will_open(self)
 
         self.perform_buy_sell()
         pass
@@ -75,3 +75,4 @@ class DiversifierAlgorithm(Algorithm):
     #   - Sell bottom 2/3 of performers
     #   - Buy top 1/3 of performers by ratio
     def perform_buy_sell(self):
+        pass

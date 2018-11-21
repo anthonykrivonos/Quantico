@@ -166,8 +166,19 @@ class Robinhood:
         res.raise_for_status()  # will throw without auth
         data = res.json()
 
-        return data
+        return
 
+    def instruments_all(self):
+        """Fetch all instruments endpoint
+
+            Returns:
+                (:obj:`dict`): JSON contents from `instruments` endpoint
+        """
+        res = self.session.get(endpoints.instruments(), timeout=15)
+        res.raise_for_status()
+        res = res.json()
+
+        return res['results']
 
     def instruments(self, stock):
         """Fetch instruments endpoint
@@ -622,8 +633,11 @@ class Robinhood:
             Returns:
                 (List): a list of Ticker strings
         """
-        instrument_list = self.get_url(endpoints.tags(tag))["instruments"]
-        return [self.get_url(instrument)["symbol"] for instrument in instrument_list]
+        res = self.get_url(endpoints.tags(tag))
+        if 'instruments' in res:
+            instrument_list = res['instruments']
+            return [ self.get_url(instrument)["symbol"] for instrument in instrument_list ]
+        return res
 
     ###########################################################################
     #                           GET OPTIONS INFO

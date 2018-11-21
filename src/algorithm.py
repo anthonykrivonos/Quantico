@@ -60,9 +60,9 @@ class Algorithm:
 
         # Schedule event functions
         sec_interval = self.sec_interval
-        Utility.sleep_then_execute(time=self.pre_open_hour, sec=sec_interval, action=lambda: self.market_will_open())
-        Utility.execute_between_times(start_time=self.open_hour, stop_time=self.close_hour, sec=sec_interval, action=lambda: self.on_market_open())
-        Utility.sleep_then_execute(time=self.close_hour, sec=sec_interval, action=lambda: self.on_market_close())
+        self.on_custom_timer(lambda: self.on_market_will_open(), start_d64 = self.pre_open_hour)
+        self.on_custom_timer(lambda: self.on_market_open(), repeat_sec = sec_interval, start_d64 = self.open_hour, stop_d64 = self.close_hour)
+        self.on_custom_timer(lambda: self.on_market_close(), start_d64 = self.close_hour)
 
         # Prevent day trading:
 
@@ -87,9 +87,9 @@ class Algorithm:
         Utility.log('Today Bought: ' + str(self.buy_list))
         Utility.log('Today Sold  : ' + str(self.sell_list))
 
-    # market_will_open:Void
+    # on_market_will_open:Void
     # NOTE: Called an hour before the market opens.
-    def market_will_open(self):
+    def on_market_will_open(self):
         Utility.log("Market will open.")
         pass
 
@@ -106,6 +106,22 @@ class Algorithm:
         # Run initialize to start trading next day
         self.initialize()
         pass
+
+    # on_custom_timer:Void
+    # param func:Function => Function to call on the timer.
+    # param repeat_sec:Integer => Number of seconds between each repeated function call. Leave None to prevent repetition of calls.
+    # param start_d64:Datetime64? => Date to start the function calls.
+    # param stop_d64:Datetime64? => Date to stop the function calls.
+    # NOTE: - Starts a custom timer that fires with the given parameters.
+    def on_custom_timer(self, func, repeat_sec = None, start_d64 = None, stop_d64 = None):
+        if not repeat_sec:
+            if start_d64 is None:
+                func()
+            else:
+                Utility.sleep_then_execute(time=start_d64, sec=1, action=lambda: func())
+        else:
+            Utility.execute_between_times(action=lambda: func(), start_time=start_d64, stop_time=stop_d64, sec=repeat_sec)
+
 
     #
     # Execution Functions

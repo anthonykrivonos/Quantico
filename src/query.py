@@ -32,6 +32,21 @@ class Query:
     # get_quote:[String:String]
     # param symbol:String => String symbol of the instrument to return.
     # returns Quote data for the instrument with the given symbol.
+    def get_symbols_by_criteria(self, price_range = (0.00, sys.maxsize)):
+        all_symbols = [ instrument['symbol'] for instrument in self.trader.instruments_all() ]
+        queried_symbols = []
+        for symbol in all_symbols:
+            try:
+                fundamentals = self.get_fundamentals(symbol)
+                if fundamentals is not None and 'low' in fundamentals and 'high' in fundamentals and float(fundamentals['low'] or -1) >= price_range[0] and float(fundamentals['high'] or sys.maxsize + 1) <= price_range[1]:
+                    queried_symbols.append(symbol)
+            except Exception as e:
+                continue
+        return queried_symbols
+
+    # get_quote:[String:String]
+    # param symbol:String => String symbol of the instrument to return.
+    # returns Quote data for the instrument with the given symbol.
     def get_quote(self, symbol):
         return self.trader.quote_data(symbol)
 
@@ -40,7 +55,6 @@ class Query:
     # returns Quote data for the instruments with the given symbols.
     def get_quotes(self, symbols):
         return self.trader.quotes_data(symbols)
-
 
     # get_instrument:[String:String]
     # param symbol:String => String symbol of the instrument.

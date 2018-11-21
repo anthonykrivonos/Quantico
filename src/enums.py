@@ -44,6 +44,14 @@ class Tag(Enum):
     FINANCE = "finance"
     CAP_WEIGHTED = "cap-weighted"
     INVESTMENT_OR_TRUST = "investment-trust-or-fund"
+    HEALTHCARE = "healthcare"
+    PHARMACEUTICAL = "pharmaceutical"
+    MEDICAL = "medical"
+    HEALTH = "health"
+    MEDICAL_DEVICES = "medical-devices"
+    MANUFACTURING = "manufacturing"
+    TECHNOLOGY = "technology"
+    US = "us"
 
 # Quintuple Index
 class Quintuple(Enum):
