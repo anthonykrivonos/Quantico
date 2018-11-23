@@ -103,8 +103,6 @@ class Algorithm:
     # NOTE: Called exactly when the market closes.
     def on_market_close(self):
         Utility.log("Market has closed.")
-        # Run initialize to start trading next day
-        self.initialize()
         pass
 
     # on_custom_timer:Void

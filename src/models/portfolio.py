@@ -47,6 +47,7 @@ class Portfolio:
         self.__query = query
         self.__quotes = quotes
         self.__name = name
+        self.__symbol_map = {}
         self.__total_assets = 0
         self.__expected_return = 0
         self.__covariance = 0
@@ -66,6 +67,7 @@ class Portfolio:
         self.__total_assets = 0
         for quote in self.__quotes:
             self.__total_assets += quote.count
+            self.__symbol_map[quote.symbol] = {}
         if self.__total_assets > 0:
             for quote in self.__quotes:
                 quote.weight = quote.count / self.__total_assets
@@ -75,6 +77,17 @@ class Portfolio:
         market_data = self.get_market_data_tuple()
         self.__expected_return = market_data[1]        # Set portfolio return
         self.__covariance = market_data[2]             # Set portfolio covariance
+
+    ##
+    #
+    #   MARK: - CHECKERS
+    #
+    ##
+
+    # is_symbol_in_portfolio:Boolean
+    # param symbol:String => A string stock symbol.
+    def is_symbol_in_portfolio(self, symbol):
+        return symbol in self.__symbol_map
 
     ##
     #

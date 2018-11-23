@@ -62,6 +62,9 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         Algorithm.on_market_close(self)
 
         self.perform_buy_sell()
+
+        self.initialize()
+
         pass
 
     #

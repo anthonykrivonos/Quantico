@@ -29,9 +29,26 @@ class Query:
     #   Getters   #
     ##           ##
 
-    # get_quote:[String:String]
-    # param symbol:String => String symbol of the instrument to return.
-    # returns Quote data for the instrument with the given symbol.
+
+    # get_fundementals_by_criteria:[String]
+    # param price_range:(float, float) => High and low prices for the queried fundamentals.
+    # returns List of symbols that fit the given criteria.
+    def get_fundementals_by_criteria(self, price_range = (0.00, sys.maxsize)):
+        all_symbols = [ instrument['symbol'] for instrument in self.trader.instruments_all() ]
+        queried_fundamentals = []
+        for symbol in all_symbols:
+            try:
+                fundamentals = self.get_fundamentals(symbol)
+                if fundamentals is not None and 'low' in fundamentals and 'high' in fundamentals and float(fundamentals['low'] or -1) >= price_range[0] and float(fundamentals['high'] or sys.maxsize + 1) <= price_range[1]:
+                    fundamentals['symbol'] = symbol
+                    queried_fundamentals.append(fundamentals)
+            except Exception as e:
+                continue
+        return queried_fundamentals
+
+    # get_symbols_by_criteria:[String]
+    # param price_range:(float, float) => High and low prices for the queried symbols.
+    # returns List of symbols that fit the given criteria.
     def get_symbols_by_criteria(self, price_range = (0.00, sys.maxsize)):
         all_symbols = [ instrument['symbol'] for instrument in self.trader.instruments_all() ]
         queried_symbols = []
@@ -43,6 +60,12 @@ class Query:
             except Exception as e:
                 continue
         return queried_symbols
+
+    # get_current_price:[String:String]
+    # param symbol:String => String symbol of the instrument to return.
+    # returns Float value of the current price of the stock with the given symbol.
+    def get_current_price(self, symbol):
+        return float(self.trader.quote_data(symbol)['last_trade_price'])
 
     # get_quote:[String:String]
     # param symbol:String => String symbol of the instrument to return.
@@ -201,6 +224,16 @@ class Query:
     def user_orders(self):
         return self.trader.order_history(None)
 
+    # user_open_orders:[[String:String]]
+    # returns The open orders for the user
+    def user_open_orders(self):
+        orders = self.trader.order_history(None)['results']
+        open_orders = []
+        for order in orders:
+            if order['state'] == 'queued':
+                open_orders.append(order)
+        return open_orders
+
     # user_account:[[String:String]]
     # returns The user's account.
     def user_account(self):
@@ -255,4 +288,12 @@ class Query:
     # param order_id:String => ID of the order to cancel.
     # returns The canceled order response.
     def exec_cancel(self, order_id):
-        return query.trader.cancel_order(order_id)
+        return self.trader.cancel_order(order_id)
+
+    # exec_cancel_open_orders:Void
+    def exec_cancel_open_orders(self):
+        orders = self.trader.order_history(None)['results']
+        for order in orders:
+            if order['state'] == 'queued':
+                self.trader.cancel_order(order['id'])
+
