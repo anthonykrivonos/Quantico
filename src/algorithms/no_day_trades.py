@@ -213,9 +213,6 @@ class NoDayTradesAlgorithm(Algorithm):
                     buy_price = current_price
                 else:
                     buy_price = current_price * buy_factor
-                print(current_price)
-                print(buy_price)
-                print(buy_factor)
                 stock_shares = int(weight_for_buy_order * cash / buy_price)
                 Algorithm.buy(self, quote.symbol, stock_shares, None, buy_price)
 
