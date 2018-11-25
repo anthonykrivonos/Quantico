@@ -20,7 +20,7 @@ cffi==1.11.5
 chardet==3.0.4
 Click==7.0
 cloudpickle==0.6.1
-clyent==1.2.2
+clyent==1.2.1
 colorama==0.4.0
 conda==4.4.11
 conda-build==3.16.3
