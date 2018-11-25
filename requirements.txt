@@ -1,6 +1,6 @@
 alabaster==0.7.12
 anaconda-client==1.2.2
-anaconda-navigator==1.2.2
+anaconda-navigator==1.8.1
 anaconda-project==0.8.2
 appdirs==1.4.3
 appnope==0.1.0
@@ -25,7 +25,7 @@ Click==7.0
 cloudpickle==0.6.1
 clyent==1.2.2
 colorama==0.4.0
-conda==4.5.11
+conda==4.4.11
 conda-build==3.16.3
 constantly==15.1.0
 contextlib2==0.5.5
