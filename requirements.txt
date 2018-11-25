@@ -143,6 +143,7 @@ rope==0.11.0
 ruamel-yaml==0.15.46
 Send2Trash==1.5.0
 service-identity==17.0.0
+setuptools==40.6.2
 simplegeneric==0.8.1
 singledispatch==3.4.0.3
 six==1.11.0
