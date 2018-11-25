@@ -65,9 +65,10 @@ class Portfolio:
     # NOTE: - Updates the total asset count and weights of each quote.
     def update_assets(self):
         self.__total_assets = 0
+        self.__symbol_map = {}
         for quote in self.__quotes:
             self.__total_assets += quote.count
-            self.__symbol_map[quote.symbol] = {}
+            self.__symbol_map[quote.symbol] = True
         if self.__total_assets > 0:
             for quote in self.__quotes:
                 quote.weight = quote.count / self.__total_assets

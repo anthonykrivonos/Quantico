@@ -25,7 +25,10 @@ class NoDayTradesAlgorithm(Algorithm):
 
         # Initialize properties
 
-        # Range of prices to purchase stocks at: (low, high)
+        # Set to True if buys and sells should not go through
+        self.debug = False
+
+        # Range of prices for stock purchasing
         self.buy_range = (0.00, 5.00)
 
         # All stocks available to buy/sell
@@ -53,7 +56,7 @@ class NoDayTradesAlgorithm(Algorithm):
         self.age = {}
 
         # Call super.__init__
-        Algorithm.__init__(self, query, portfolio, sec_interval, name = "No Day Trades")
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "No Day Trades", buy_range = self.buy_range, debug = self.debug)
 
         self.on_market_will_open()
 
@@ -113,37 +116,39 @@ class NoDayTradesAlgorithm(Algorithm):
 
     def generate_candidates(self):
 
-        # print(self.query.get_by_tag(Tag.TECHNOLOGY))
+        # Get all fundamentals within the buy range
         unsorted_fundamentals = self.query.get_fundementals_by_criteria(self.buy_range)
+
+        # Sort the unsorted fundamentals by low price (close would be preferred, but is unavailable)
         candidate_fundamentals = sorted(unsorted_fundamentals, key=lambda fund: fund['low'])
 
+        # Store the symbols of each candidate fundamental into a separate array
         all_candidate_symbols = [ fund['symbol'] for fund in candidate_fundamentals ]
 
-        portfolio_map = {}
-        for quote in self.portfolio.get_quotes():
-            portfolio_map[quote.symbol] = True
-
+        # Instantiate list of long and short fundamentals, as well as the average of their low prices
         short_candidate_fundamentals = []
         short_candidate_low_avg = 0.00
         long_candidate_fundamentals = []
         long_candidate_low_avg = 0.00
 
+        # Update long and short data
         for fund in candidate_fundamentals:
-            if fund['symbol'] in portfolio_map:
+            if self.portfolio.is_symbol_in_portfolio(fund['symbol']):
+                # Stock is long
                 long_candidate_fundamentals.append(fund)
                 long_candidate_low_avg += float(fund['low'])
             else:
+                # Stock is short
                 short_candidate_fundamentals.append(fund)
                 short_candidate_low_avg += float(fund['low'])
-
         long_candidate_low_avg /= max(len(long_candidate_fundamentals), 1)
         short_candidate_low_avg /= max(len(short_candidate_fundamentals), 1)
 
-        percent_difference = (short_candidate_low_avg - long_candidate_low_avg) / max(long_candidate_low_avg, 1)
+        # Create a new list of candidates to trade
+        candidates_to_trade_length = min(self.max_candidates + 1, len(candidate_fundamentals) + 1)
+        candidates_to_trade_symbols = [ fund['symbol'] for fund in candidate_fundamentals[0:candidates_to_trade_length] ]
 
-        candidate_length = min(self.max_candidates + 1, len(candidate_fundamentals))
-        candidates_to_trade_symbols = [ fund['symbol'] for fund in candidate_fundamentals[0:candidate_length] ]
-
+        # Set a weight for trades
         to_trade_weight = 1.00 / len(candidates_to_trade_symbols)
 
         return (all_candidate_symbols, candidates_to_trade_symbols, to_trade_weight)
@@ -153,67 +158,100 @@ class NoDayTradesAlgorithm(Algorithm):
 
         Utility.log("Executing perform_buy_sell:")
 
-        buy_factor = .99
-        sell_factor = 1.01
+        # Percentage of the current price to submit buy orders at
+        BUY_FACTOR = 0.99
 
+        # Percentage of the current price to submit sell orders at
+        SELL_FACTOR = 1.01
+
+        # Factor at which the stock may be higher than its average price over the past day and can still be bought
+        GAIN_FACTOR = 1.25
+
+        # Get the user's buying power, or cash
         cash = self.query.user_buying_power()
 
+        # Cancel all of the user's open orders
         self.query.exec_cancel_open_orders()
 
+        # Track the user's open orders
         open_orders = self.query.user_open_orders()
         open_order_symbols = {}
+        open_buy_order_count = 0
         for order in open_orders:
+
             stock = self.query.stock_from_instrument_url(order['instrument'])
             open_order_symbols[stock['symbol']] = True
 
-        # Order sell at profit target in hope that somebody actually buys it
+            # Increment number of current buy orders
+            if 'side' in order and order['side'] == 'buy':
+                open_buy_order_count += 1
+
+        # Sell stocks at profit target in hope that somebody actually buys it
         for quote in self.portfolio.get_quotes():
+
+            # Assure the given quote is not part of any open orders
             if quote.symbol not in open_order_symbols:
+
+                # Get the number of shares of the stock in the given portfolio
                 stock_shares = quote.count
+
+                # Current price of the given stock
                 current_price = self.query.get_current_price(quote.symbol)
 
-                if quote.symbol in self.age and self.age[quote.symbol] == 1:
-                    pass
-                elif quote.symbol in self.age and self.immediate_sale_age <= self.age[quote.symbol] and self.immediate_sale_price > current_price:
-                    if (quote.symbol in self.age and self.age[quote.symbol] < 2):
+                # Sell if the age has exceeded the immediate sale age and the immediate sale price is greater than the current price
+                if quote.symbol in self.age:
+                    if self.age[quote.symbol] < 2:
                         pass
-                    elif quote.symbol not in self.age:
-                        self.age[quote.symbol] = 1
-                    else:
+                    elif self.immediate_sale_age <= self.age[quote.symbol] and self.immediate_sale_price >= current_price:
                         Algorithm.sell(self, quote.symbol, stock_shares, None, current_price)
                         pass
                 else:
-                    if (quote.symbol in self.age and self.age[quote.symbol] < 2) :
-                        pass
-                    elif quote.symbol not in self.age:
-                        self.age[quote.symbol] = 1
-                    else:
-                        Algorithm.sell(self, quote.symbol, stock_shares, None, current_price)
-                        pass
+                    self.age[quote.symbol] = 1
 
+        # Instantiate the weight for the number of simultaneous buy orders to be made
         weight_for_buy_order = float(1.00 / self.max_simult_buy_orders)
 
-        for i, symbol in enumerate(self.candidates):
-            if i >= self.max_simult_buy_orders:
+        # Iterate over each candidate to sell
+        open_buy_order_count
+        for symbol in self.candidates:
+
+            # Finish buying stocks once the limit has been reached
+            if open_buy_order_count > self.max_simult_buy_orders:
                 break
 
+            # Store the current price of the candidate stock
             current_price = self.query.get_current_price(symbol)
+
+            # Get the history of the stock
             history = self.portfolio.get_symbol_history(symbol, Span.TEN_MINUTE, Span.DAY)
 
             if current_price != 0.0:
-                # Calculate stock close price mean
+
+                # Calculate stock close price mean over the past day
                 mean = 0.00
                 for price in history:
                     mean += price.close
                 mean /= max(len(history), 1)
-                if mean == 0.00:
-                    mean = current_price
+                mean = round(mean, 2)
 
-                if current_price > float(1.25 * mean):
-                    buy_price = current_price
-                else:
-                    buy_price = current_price * buy_factor
-                stock_shares = int(weight_for_buy_order * cash / buy_price)
-                Algorithm.buy(self, quote.symbol, stock_shares, None, buy_price)
+                if mean != 0.0:
+
+                    # Calculate buy price
+                    if current_price > float(GAIN_FACTOR * mean):
+                        # Set the buy_price to the current price if the stock is at a high compared to the average
+                        buy_price = current_price
+                    else:
+                        # Otherwise, set the buy price equal to the current price
+                        buy_price = current_price * BUY_FACTOR
+                    buy_price = round(buy_price, 2)
+
+                    # Number of shares to buy is the weight of the buy order divided by the buy price times the number of available cash
+                    stock_shares = int(weight_for_buy_order * cash / buy_price)
+                    if stock_shares > 0:
+                        did_buy = Algorithm.buy(self, symbol, stock_shares, None, buy_price)
+                        if did_buy:
+                            # Decrement available cash and increment the number of buy orders
+                            cash -= stock_shares * buy_price
+                            open_buy_order_count += 1
 
         Utility.log("Finished run of perform_buy_sell")

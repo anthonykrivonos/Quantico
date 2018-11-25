@@ -41,11 +41,11 @@ except Exception as e:
 my_port = query.user_portfolio()
 # their_port = Portfolio(query, [Quote("AAPL", 0), Quote("GOOG", 0)], "Cool Port")
 
-# Run algorithm
-NoDayTradesAlgorithm(query, my_port)
-
 # history = my_port.get_history()
 # print(my_port.get_market_data_tuple())
 # print(history)
 
 # print(my_port.sharpe_optimization())
+
+# Run algorithm
+NoDayTradesAlgorithm(query, my_port)

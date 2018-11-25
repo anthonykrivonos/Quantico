@@ -23,7 +23,7 @@ class Algorithm:
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
     # param name:String => Name of the algorithm.
-    def __init__(self, query, portfolio, sec_interval = 900, name = "Algorithm"):
+    def __init__(self, query, portfolio, sec_interval = 900, name = "Algorithm", buy_range = (0.00, sys.maxsize), debug = False):
 
         # Declare the start of a run
         Utility.log("Initialized Algorithm: \'" + name + "\'")
@@ -35,7 +35,8 @@ class Algorithm:
         self.sec_interval = sec_interval      # Interval (in s) of event executions
         self.buy_list = []                    # List of stocks bought in the past day
         self.sell_list = []                   # List of stocks sold in the past day
-        self.buy_range = (0.00, sys.maxsize)  # Range of prices for purchasing stocks
+        self.buy_range = buy_range            # Range of prices for purchasing stocks
+        self.debug = debug                    # Set to True if buys and sells should not go through
 
         # Initialize the algorithm
         self.initialize()
@@ -134,9 +135,12 @@ class Algorithm:
     def buy(self, symbol, quantity, stop = None, limit = None):
         try:
             if limit <= self.buy_range[1] and limit >= self.buy_range[0] and symbol not in self.buy_list and symbol not in self.sell_list:
-                self.query.exec_buy(symbol, quantity, stop, limit)
+                if not self.debug:
+                    self.query.exec_buy(symbol, quantity, stop, limit)
+                    Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+                else:
+                    Utility.warning("Would have bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop) + " if not in 'debug' mode")
                 self.buy_list.append(symbol)
-                Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 self.portfolio.add_quote(Quote(symbol, quantity))
                 return True
             else:
@@ -162,9 +166,12 @@ class Algorithm:
     def sell(self, symbol, quantity, stop = None, limit = None):
         try:
             if symbol not in self.sell_list and symbol not in self.buy_list:
-                self.query.exec_sell(symbol, quantity, stop, limit)
+                if not self.debug:
+                    self.query.exec_sell(symbol, quantity, stop, limit)
+                    Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+                else:
+                    Utility.warning("Would have sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop) + " if not in 'debug' mode")
                 self.sell_list.append(symbol)
-                Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 self.portfolio.remove_quote(Quote(symbol, quantity))
                 return True
             else:
@@ -182,8 +189,11 @@ class Algorithm:
     # NOTE: Safely cancels an order given its ID, if possible.
     def cancel(self, order_id):
         try:
-            self.query.exec_cancel(order_id)
-            Utility.log("Cancelled order " + order_id)
+            if not self.debug:
+                self.query.exec_cancel(order_id)
+                Utility.log("Cancelled order " + order_id)
+            else:
+                Utility.warning("Would have cancelled order " + order_id + " if not in 'debug' mode")
             return True
         except:
             Utility.log("Could not cancel " + symbol + ": A client error occurred")

@@ -21,11 +21,11 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     # param sec_interval:Integer => Time interval in seconds for event handling.
     def __init__(self, query, portfolio, sec_interval = 900):
 
-        # Call super.__init__
-        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Top Movers, No Day Trades")
-
         # Initialize properties
         self.buy_range = (0.00, 5.00)
+
+        # Call super.__init__
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Top Movers, No Day Trades", buy_range = self.buy_range)
 
         self.perform_buy_sell()
 
