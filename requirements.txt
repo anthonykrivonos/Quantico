@@ -1,6 +1,6 @@
 alabaster==0.7.12
 anaconda-client==1.2.2
-anaconda-navigator==1.8.1
+anaconda-navigator==1.2.2
 anaconda-project==0.8.2
 appdirs==1.4.3
 appnope==0.1.0
@@ -106,6 +106,7 @@ pep8==1.7.1
 pexpect==4.6.0
 pickleshare==0.7.5
 Pillow==5.3.0
+pip==9.0.1
 pkginfo==1.4.2
 pluggy==0.8.0
 ply==3.11
