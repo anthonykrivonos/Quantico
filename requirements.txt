@@ -23,7 +23,7 @@ cloudpickle==0.6.1
 clyent==1.2.1
 colorama==0.4.0
 conda==4.3.16
-conda-build==3.16.3
+conda-build==2.1.5
 constantly==15.1.0
 contextlib2==0.5.5
 cryptography==2.3.1
