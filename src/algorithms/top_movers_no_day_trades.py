@@ -10,7 +10,8 @@ import math
 from utility import *
 from enums import *
 from mathematics import *
-from algorithm import Algorithm
+
+from algorithms.__algorithm import *
 
 # Abstract: Algorithm employing a top movers tactic.
 
@@ -81,7 +82,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     #   - Buy top 1/3 of performers by ratio
     def perform_buy_sell(self):
 
-        Utility.log("Executing perform_buy_sell:")
+        Algorithm.log(self, "Executing perform_buy_sell:")
 
         # The percentage of the user's total equity to use for this algorithm
         USER_CASH_PERCENTAGE = 0.6
@@ -91,10 +92,10 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         ROUND_2_WEIGHT = 1.7
         ROUND_3_WEIGHT = 1.3
 
-        Utility.log("Cash percentage: " + str(USER_CASH_PERCENTAGE))
-        Utility.log("Round 1 weight: " + str(ROUND_1_WEIGHT))
-        Utility.log("Round 2 weight: " + str(ROUND_2_WEIGHT))
-        Utility.log("Round 3 weight: " + str(ROUND_3_WEIGHT))
+        Algorithm.log(self, "Cash percentage: " + str(USER_CASH_PERCENTAGE))
+        Algorithm.log(self, "Round 1 weight: " + str(ROUND_1_WEIGHT))
+        Algorithm.log(self, "Round 2 weight: " + str(ROUND_2_WEIGHT))
+        Algorithm.log(self, "Round 3 weight: " + str(ROUND_3_WEIGHT))
 
         symbols_to_analyze = []
         symbol_quantity_map = {}
@@ -200,7 +201,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         bad_performer_count = round(symbol_count * 2 / 3)
         bad_performer_list = symbol_propensity_list[-1 * bad_performer_count:symbol_count]
 
-        Utility.log("Bad performers: " + str(bad_performer_list))
+        Algorithm.log(self, "Bad performers: " + str(bad_performer_list))
 
         # Sell each poor performer
         for pair in bad_performer_list:
@@ -218,7 +219,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         good_performer_count = symbol_count - bad_performer_count
         good_performer_list = symbol_propensity_list[0:good_performer_count]
 
-        Utility.log("Good performers: " + str(good_performer_list))
+        Algorithm.log(self, "Good performers: " + str(good_performer_list))
 
         user_cash = USER_CASH_PERCENTAGE * self.query.user_buying_power()
 
@@ -240,4 +241,4 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
             if quantity > 0.0:
                 did_buy = Algorithm.buy(self, symbol, quantity, limit=limit)
 
-        Utility.log("Finished run of perform_buy_sell")
+        Algorithm.log(self, "Finished run of perform_buy_sell")

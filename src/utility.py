@@ -5,7 +5,7 @@
 # Imports
 import sys
 import re, datetime
-from time import sleep
+from time import sleep, time
 import threading
 from termcolor import colored
 import random
@@ -32,23 +32,32 @@ class Utility:
     # log:Void
     # param message:String => Message to log.
     # NOTE: Prints a log message with time.
+    # returns The output string.
     @staticmethod
     def log(message):
-        print(colored(str(Utility.now_datetime64()) + "L: " + message, 'white'))
+        output = str(Utility.now_datetime64()) + "L: " + message
+        print(colored(output, 'white'))
+        return output
 
     # error:Void
     # param message:String => Message to log as an error.
     # NOTE: Prints an error message with time.
+    # returns The output string.
     @staticmethod
     def error(message):
-        print(colored(str(Utility.now_datetime64()) + "E: " + message, 'red'))
+        output = str(Utility.now_datetime64()) + "E: " + message
+        print(colored(output, 'red'))
+        return output
 
     # warning:Void
     # param message:String => Message to log as a warning.
     # NOTE: Prints a warning message with time.
+    # returns The output string.
     @staticmethod
     def warning(message):
-        print(colored(str(Utility.now_datetime64()) + "W: " + message, 'yellow'))
+        output = str(Utility.now_datetime64()) + "W: " + message
+        print(colored(output, 'yellow'))
+        return output
 
     # get_date_string:String
     # param date:datetime => Date to be converted into a string.
@@ -56,6 +65,12 @@ class Utility:
     @staticmethod
     def get_date_string(date):
         return date.strftime('%Y-%m-%d')
+
+    # now_timestamp:String
+    # returns The timestamp for current time since epoch.
+    @staticmethod
+    def now_timestamp():
+        return time()
 
     # now_datetime64:datetime64
     # returns The current date as a datetime64.
