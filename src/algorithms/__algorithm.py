@@ -16,6 +16,7 @@ from mathematics import *
 from models.quote import *
 
 # Abstract: Generic/abstract algorithm parent class.
+# NOTE: All algorithms DO NOT perform day trades.
 
 class Algorithm:
 
@@ -24,9 +25,6 @@ class Algorithm:
     # param sec_interval:Integer => Time interval in seconds for event handling.
     # param name:String => Name of the algorithm.
     def __init__(self, query, portfolio, sec_interval = 900, name = "Algorithm", buy_range = (0.00, sys.maxsize), debug = False):
-
-        # Declare the start of a run
-        Utility.log("Initialized Algorithm: \'" + name + "\'")
 
         # Initialize properties
         self.name = name                      # String name of the algorithm
@@ -37,6 +35,10 @@ class Algorithm:
         self.sell_list = []                   # List of stocks sold in the past day
         self.buy_range = buy_range            # Range of prices for purchasing stocks
         self.debug = debug                    # Set to True if buys and sells should not go through
+        self.logs = []                        # List of logged output
+
+        # Declare the start of a run
+        self.log("Initialized Algorithm: \'" + name + "\'")
 
         # Initialize the algorithm
         self.initialize()
@@ -56,8 +58,8 @@ class Algorithm:
         self.close_hour = market_hours[1]
 
         # Indicate the market hours
-        Utility.log("Next Market Open:  " + str(self.open_hour))
-        Utility.log("Next Market Close: " + str(self.close_hour))
+        self.log("Next Market Open:  " + str(self.open_hour))
+        self.log("Next Market Close: " + str(self.close_hour))
 
         # Schedule event functions
         sec_interval = self.sec_interval
@@ -85,25 +87,25 @@ class Algorithm:
         self.buy_list = todays_buys
         self.sell_list = todays_sells
 
-        Utility.log('Today Bought: ' + str(self.buy_list))
-        Utility.log('Today Sold  : ' + str(self.sell_list))
+        self.log('Today Bought: ' + str(self.buy_list))
+        self.log('Today Sold  : ' + str(self.sell_list))
 
     # on_market_will_open:Void
     # NOTE: Called an hour before the market opens.
     def on_market_will_open(self):
-        Utility.log("Market will open.")
+        self.log("Market will open.")
         pass
 
     # on_market_open:Void
     # NOTE: Called exactly when the market opens. Cannot include a buy or sell.
     def on_market_open(self):
-        Utility.log("Market has opened.")
+        self.log("Market has opened.")
         pass
 
     # on_market_close:Void
     # NOTE: Called exactly when the market closes.
     def on_market_close(self):
-        Utility.log("Market has closed.")
+        self.log("Market has closed.")
         pass
 
     # on_custom_timer:Void
@@ -111,7 +113,7 @@ class Algorithm:
     # param repeat_sec:Integer => Number of seconds between each repeated function call. Leave None to prevent repetition of calls.
     # param start_d64:Datetime64? => Date to start the function calls.
     # param stop_d64:Datetime64? => Date to stop the function calls.
-    # NOTE: - Starts a custom timer that fires with the given parameters.
+    # NOTE: Starts a custom timer that fires with the given parameters.
     def on_custom_timer(self, func, repeat_sec = None, start_d64 = None, stop_d64 = None):
         if not repeat_sec:
             if start_d64 is None:
@@ -121,6 +123,24 @@ class Algorithm:
         else:
             Utility.execute_between_times(action=lambda: func(), start_time=start_d64, stop_time=stop_d64, sec=repeat_sec)
 
+    # log:Void
+    # param message:String => The string message to log.
+    # param type:String => The string representation of the type of message this is.
+    # NOTE: Logs the output and adds it to the list of logs.
+    def log(self, message, type = 'log'):
+        if type == 'error' or type == 'w' or type == 'err':
+            self.logs.append(Utility.error(message))
+        elif type == 'warning' or type == 'w' or type == 'warn':
+            self.logs.append(Utility.warning(message))
+        else:
+            self.logs.append(Utility.log(message))
+
+    # get_logs:[String]
+    # param last:Integer => Latest number of logs to output.
+    # returns A list of logs
+    def get_logs(self, last):
+        count = -min(len(self.logs), last if last is not None else len(self.logs))
+        return self.logs[count:]
     #
     # Execution Functions
     #
@@ -136,7 +156,7 @@ class Algorithm:
             if limit <= self.buy_range[1] and limit >= self.buy_range[0] and symbol not in self.buy_list and symbol not in self.sell_list:
                 if not self.debug:
                     self.query.exec_buy(symbol, quantity, stop, limit)
-                    Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+                    self.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 else:
                     Utility.warning("Would have bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop) + " if not in 'debug' mode")
                 self.buy_list.append(symbol)
@@ -166,7 +186,7 @@ class Algorithm:
             if symbol not in self.sell_list and symbol not in self.buy_list:
                 if not self.debug:
                     self.query.exec_sell(symbol, quantity, stop, limit)
-                    Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+                    self.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 else:
                     Utility.warning("Would have sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop) + " if not in 'debug' mode")
                 self.sell_list.append(symbol)
@@ -188,7 +208,7 @@ class Algorithm:
         try:
             if not self.debug:
                 self.query.exec_cancel(order_id)
-                Utility.log("Cancelled order " + order_id)
+                self.log("Cancelled order " + order_id)
             else:
                 Utility.warning("Would have cancelled order " + order_id + " if not in 'debug' mode")
             return True

@@ -23,6 +23,8 @@ class Query:
     def __init__(self, email, password):
         self.trader = Robinhood()
         self.trader.login(username=email, password=password)
+        self.email = email
+        self.password = password
 
 
     ##           ##

@@ -10,7 +10,8 @@ import math
 from utility import *
 from enums import *
 from mathematics import *
-from algorithm import Algorithm
+
+from algorithms.__algorithm import *
 
 # Abstract: Algorithm employing a no-day-trades tactic.
 #           For more info on this algorithm, see:
@@ -89,7 +90,7 @@ class NoDayTradesAlgorithm(Algorithm):
         for symbol in self.age:
             if not self.portfolio.is_symbol_in_portfolio(symbol):
                 self.age[quote.symbol] = 0
-            Utility.log("stock.symbol: " + symbol + " : age: " + str(self.age[symbol]))
+            Algorithm.log(self, "stock.symbol: " + symbol + " : age: " + str(self.age[symbol]))
 
         self.perform_buy_sell()
 
@@ -156,7 +157,7 @@ class NoDayTradesAlgorithm(Algorithm):
     # perform_buy_sell:Void
     def perform_buy_sell(self):
 
-        Utility.log("Executing perform_buy_sell:")
+        Algorithm.log(self, "Executing perform_buy_sell:")
 
         # Percentage of the current price to submit buy orders at
         BUY_FACTOR = 0.99
@@ -254,4 +255,4 @@ class NoDayTradesAlgorithm(Algorithm):
                             cash -= stock_shares * buy_price
                             open_buy_order_count += 1
 
-        Utility.log("Finished run of perform_buy_sell")
+        Algorithm.log(self, "Finished run of perform_buy_sell")
