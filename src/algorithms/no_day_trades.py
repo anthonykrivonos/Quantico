@@ -106,7 +106,7 @@ class NoDayTradesAlgorithm(Algorithm):
     def on_market_close(self):
         Algorithm.on_market_close(self)
 
-        self.query.exec_cancel_open_orders()
+        Algorithm.cancel_open_orders(self)
 
         pass
 
@@ -171,7 +171,7 @@ class NoDayTradesAlgorithm(Algorithm):
         cash = self.query.user_buying_power()
 
         # Cancel all of the user's open orders
-        self.query.exec_cancel_open_orders()
+        Algorithm.cancel_open_orders(self)
 
         # Track the user's open orders
         open_orders = self.query.user_open_orders()

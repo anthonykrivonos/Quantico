@@ -121,7 +121,6 @@ class Algorithm:
         else:
             Utility.execute_between_times(action=lambda: func(), start_time=start_d64, stop_time=stop_d64, sec=repeat_sec)
 
-
     #
     # Execution Functions
     #
@@ -156,7 +155,6 @@ class Algorithm:
             Utility.error("Could not buy " + symbol + ": " + str(e))
         return False
 
-
     # sell:Boolean
     # param symbol:String => String symbol of the instrument.
     # param quantity:Number => Number of shares to execute sell for.
@@ -183,7 +181,6 @@ class Algorithm:
             Utility.error("Could not sell " + symbol + ": " + str(e))
         return False
 
-
     # cancel:Void
     # param order_id:String => ID of the order to cancel.
     # NOTE: Safely cancels an order given its ID, if possible.
@@ -196,5 +193,19 @@ class Algorithm:
                 Utility.warning("Would have cancelled order " + order_id + " if not in 'debug' mode")
             return True
         except:
-            Utility.log("Could not cancel " + symbol + ": A client error occurred")
+            Utility.error("Could not cancel " + symbol + ": A client error occurred")
+        return False
+
+    # cancel_open_orders:Void
+    # NOTE: Safely cancels all open orders, if possible.
+    def cancel_open_orders(self):
+        try:
+            if not self.debug:
+                cancelled_order_ids = elf.query.exec_cancel_open_orders()
+                Utility.log("Cancelled orders " + cancelled_order_ids)
+            else:
+                Utility.warning("Would have cancelled all open orders if not in 'debug' mode")
+            return True
+        except:
+            Utility.error("Could not cancel open orders: A client error occurred")
         return False

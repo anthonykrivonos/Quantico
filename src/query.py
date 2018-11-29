@@ -290,10 +290,15 @@ class Query:
     def exec_cancel(self, order_id):
         return self.trader.cancel_order(order_id)
 
-    # exec_cancel_open_orders:Void
+    # exec_cancel_open_orders:[String]
+    # returns A list of string IDs for the cancelled orders.
     def exec_cancel_open_orders(self):
         orders = self.trader.order_history(None)['results']
+        cancelled_order_ids = []
         for order in orders:
+            print(order)
             if order['state'] == 'queued':
                 self.trader.cancel_order(order['id'])
+                cancelled_order_ids.append(order['id'])
+        return cancelled_order_ids
 
