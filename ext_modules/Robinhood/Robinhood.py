@@ -20,6 +20,9 @@ import dateutil
 from Robinhood import exceptions as RH_exception
 from Robinhood import endpoints
 
+# Quantico imports
+from utility import *
+
 class Bounds(Enum):
     """Enum for bounds in `historicals` endpoint """
 
@@ -718,7 +721,7 @@ class Robinhood:
 
     def stock_portfolio(self):
         positions = self.positions()['results'] or []
-        return list(map(lambda position: {**position, **self.session.get(position['instrument'], timeout=15).json()}, positions))
+        return list(map(lambda position: Utility.merge_dicts(position, self.session.get(position['instrument'], timeout=15).json()), positions))
 
     def portfolios(self):
         """Returns the user's portfolio data """

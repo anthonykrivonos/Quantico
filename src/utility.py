@@ -216,3 +216,13 @@ class Utility:
     def get_random_hex():
         rand = lambda: random.randint(0,255)
         return ('#%02X%02X%02X' % (rand(), rand(), rand()))
+
+    # merge_dicts:Dict
+    # param x:Dict => Arbitrary dictionary.
+    # param y:Dict => Arbitrary dictionary.
+    # returns Returns a new dictionary with contents of x and y merged.
+    @staticmethod
+    def merge_dicts(x, y):
+        z = x.copy()
+        z.update(y)
+        return z
