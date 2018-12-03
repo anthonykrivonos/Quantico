@@ -221,7 +221,7 @@ class Algorithm:
     def cancel_open_orders(self):
         try:
             if not self.debug:
-                cancelled_order_ids = elf.query.exec_cancel_open_orders()
+                cancelled_order_ids = self.query.exec_cancel_open_orders()
                 Utility.log("Cancelled orders " + cancelled_order_ids)
             else:
                 Utility.warning("Would have cancelled all open orders if not in 'debug' mode")

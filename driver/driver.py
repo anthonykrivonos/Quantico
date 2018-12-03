@@ -48,4 +48,4 @@ my_port = query.user_portfolio()
 # print(my_port.sharpe_optimization())
 
 # Run algorithm
-NoDayTradesAlgorithm(query, my_port)
+NoDayTradesAlgorithm(query, my_port, age_file='data/ages.txt')

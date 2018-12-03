@@ -22,7 +22,7 @@ class NoDayTradesAlgorithm(Algorithm):
     # __init__:Void
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
-    def __init__(self, query, portfolio, sec_interval = 900):
+    def __init__(self, query, portfolio, sec_interval = 900, age_file = None):
 
         # Initialize properties
 
@@ -30,7 +30,7 @@ class NoDayTradesAlgorithm(Algorithm):
         self.debug = False
 
         # Range of prices for stock purchasing
-        self.buy_range = (0.00, 5.00)
+        self.buy_range = (0.00, 20.00)
 
         # All stocks available to buy/sell
         self.candidates = []
@@ -56,6 +56,9 @@ class NoDayTradesAlgorithm(Algorithm):
         # Over simplistic tracking of position age
         self.age = {}
 
+        # File keeping track of ages
+        self.age_file = age_file
+
         # Call super.__init__
         Algorithm.__init__(self, query, portfolio, sec_interval, name = "No Day Trades", buy_range = self.buy_range, debug = self.debug)
 
@@ -65,6 +68,7 @@ class NoDayTradesAlgorithm(Algorithm):
     # NOTE: Configures the algorithm to run indefinitely.
     def initialize(self):
         Algorithm.initialize(self)
+        self.update_from_age_file()
         pass
 
     #
@@ -91,6 +95,8 @@ class NoDayTradesAlgorithm(Algorithm):
             if not self.portfolio.is_symbol_in_portfolio(symbol):
                 self.age[quote.symbol] = 0
             Algorithm.log(self, "stock.symbol: " + symbol + " : age: " + str(self.age[symbol]))
+
+        self.overwrite_age_file()
 
         self.perform_buy_sell()
 
@@ -209,6 +215,9 @@ class NoDayTradesAlgorithm(Algorithm):
                 else:
                     self.age[quote.symbol] = 1
 
+        # Overwrite the age file
+        self.overwrite_age_file()
+
         # Instantiate the weight for the number of simultaneous buy orders to be made
         weight_for_buy_order = float(1.00 / self.max_simult_buy_orders)
 
@@ -256,3 +265,33 @@ class NoDayTradesAlgorithm(Algorithm):
                             open_buy_order_count += 1
 
         Algorithm.log(self, "Finished run of perform_buy_sell")
+
+
+    #
+    # Event Functions
+    #
+
+    # overwrite_age_file:Void
+    def overwrite_age_file(self):
+        try:
+            if self.age_file is not None:
+                age_str = {}
+                for key, value in self.age.items():
+                    age_str[key] = str(value)
+                Utility.set_file_from_dict(self.age_file, age_str)
+            pass
+        except:
+            Utility.error("Could not overwrite " + self.age_file + " using the age dict.")
+            pass
+
+    # update_from_age_file:Void
+    def update_from_age_file(self):
+        try:
+            if self.age_file is not None:
+                self.age = Utility.get_file_as_dict(self.age_file)
+                for key, value in self.age.items():
+                    self.age[key] = int(value)
+            pass
+        except:
+            Utility.error("Could not update the age dict from " + self.age_file + ".")
+            pass

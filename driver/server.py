@@ -27,6 +27,10 @@ auth = HTTPBasicAuth()
 
 processes = {}
 
+# /algorithm/run
+# request name:String => Full name of algorithm to deploy.
+# response Responds with a JSON status string.
+# NOTE: Deploys the given algorithm on a new socket.
 @app.route('/algorithm/run', methods=['POST'])
 def algorithm_run():
     Utility.log(request.authorization["username"])
@@ -48,6 +52,10 @@ def algorithm_run():
         'process_id': process_id
     }), 200
 
+# /algorithm/logs
+# request process_id:String => String id of the algorithm process.
+# response Responds with a JSON logs string.
+# NOTE: Returns the entire list of logs for the given algorithm.
 @app.route('/algorithm/logs', methods=['POST'])
 def algorithm_logs():
     Utility.log(request.authorization["username"])
@@ -69,6 +77,10 @@ def algorithm_logs():
         'logs': logs
     }), 200
 
+# /algorithm/stop
+# request process_id:String => String id of the algorithm process.
+# response Responds with a JSON status string.
+# NOTE: Stops the algorithm and removes it from the processes map.
 @app.route('/algorithm/stop', methods=['POST'])
 def algorithm_stop():
     Utility.log(request.authorization["username"])

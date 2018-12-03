@@ -226,3 +226,74 @@ class Utility:
         z = x.copy()
         z.update(y)
         return z
+
+    # set_file_from_dict:Void
+    # param file_name:String => String name of the file to access.
+    # param dict:Dict => Dictionary to set into file.
+    @staticmethod
+    def set_file_from_dict(file_name, dict):
+        open(file_name, 'w').close()
+        file = open(file_name, "w")
+        for key, value in dict.items():
+            file.write(Utility.get_file_dict_string(key, value) + "\n")
+        file.close()
+
+    # set_in_file:Void
+    # param file_name:String => String name of the file to access.
+    # param key:String => Key to set in file.
+    # param value:String => Value to set in file.
+    @staticmethod
+    def set_in_file(file_name, key, value):
+        written = False
+        file = open(file_name, "r")
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if line.find(key, 0, line.find("=")) is not -1:
+                lines[i] = Utility.get_file_dict_string(key, value) + "\n"
+                written = True
+        file.close()
+        file = open(file_name, "w")
+        for line in lines:
+            file.write(line)
+        if not written:
+            file.write(Utility.get_file_dict_string(key, value) + "\n")
+        file.close()
+
+    # get_from_file:String
+    # param file_name:String => String name of the file to access.
+    # param key:String => Key to get from file.
+    # returns Returns the found value for the given key or None.
+    @staticmethod
+    def get_from_file(file_name, key):
+        file = open(file_name, "r")
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if line.find(key, 0, line.find("=")) is not -1:
+                file.close()
+                return line[line.find("=") + 1:len(line)]
+        file.close()
+        return None
+
+    # get_file_as_dict:Dict
+    # param file_name:String => String name of the file to access.
+    # param key:String => Key to get from file.
+    # returns Returns the found value for the given key or None.
+    @staticmethod
+    def get_file_as_dict(file_name):
+        file = open(file_name, "r")
+        file_dict = {}
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            key = line[0:line.find("=")]
+            value = line[line.find("=") + 1:len(line) - 1]
+            file_dict[key] = value
+        file.close()
+        return file_dict
+
+    # get_file_dict_string:String
+    # param key:String => Key to turn into string.
+    # param value:String => Value to turn into string.
+    # returns Returns a simple string structure for storing a key value pair in a file.
+    @staticmethod
+    def get_file_dict_string(key, value):
+        return key + "=" + value
