@@ -153,7 +153,7 @@ class Algorithm:
     # NOTE: Safely executes a buy order outside of open hours, if possible.
     def buy(self, symbol, quantity, stop = None, limit = None):
         try:
-            if limit <= self.buy_range[1] and limit >= self.buy_range[0] and symbol not in self.buy_list and symbol not in self.sell_list:
+            if limit <= self.buy_range[1] and limit >= self.buy_range[0] and symbol not in self.sell_list:
                 if not self.debug:
                     self.query.exec_buy(symbol, quantity, stop, limit)
                     self.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
@@ -167,8 +167,6 @@ class Algorithm:
                     Utility.error("Could not buy " + symbol + ": Stock too expensive")
                 elif limit < self.buy_range[0]:
                     Utility.error("Could not buy " + symbol + ": Stock too cheap")
-                elif symbol in self.buy_list:
-                    Utility.error("Could not buy " + symbol + ": Stock already bought today")
                 elif symbol in self.sell_list:
                     Utility.error("Could not buy " + symbol + ": Stock already sold today")
         except Exception as e:
@@ -183,7 +181,7 @@ class Algorithm:
     # NOTE: Safely executes a sell order outside of open hours, if possible.
     def sell(self, symbol, quantity, stop = None, limit = None):
         try:
-            if symbol not in self.sell_list and symbol not in self.buy_list:
+            if symbol not in self.buy_list:
                 if not self.debug:
                     self.query.exec_sell(symbol, quantity, stop, limit)
                     self.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
@@ -193,9 +191,7 @@ class Algorithm:
                 self.portfolio.remove_quote(Quote(symbol, quantity))
                 return True
             else:
-                if symbol in self.sell_list:
-                    Utility.error("Could not sell " + symbol + ": Stock already sold today")
-                elif symbol in self.buy_list:
+                if symbol in self.buy_list:
                     Utility.error("Could not sell " + symbol + ": Stock already bought today")
         except Exception as e:
             Utility.error("Could not sell " + symbol + ": " + str(e))
@@ -222,7 +218,7 @@ class Algorithm:
         try:
             if not self.debug:
                 cancelled_order_ids = self.query.exec_cancel_open_orders()
-                Utility.log("Cancelled orders " + cancelled_order_ids)
+                Utility.log("Cancelled orders " + str(cancelled_order_ids))
             else:
                 Utility.warning("Would have cancelled all open orders if not in 'debug' mode")
             return True

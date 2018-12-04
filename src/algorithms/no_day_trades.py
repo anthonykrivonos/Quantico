@@ -30,7 +30,7 @@ class NoDayTradesAlgorithm(Algorithm):
         self.debug = False
 
         # Range of prices for stock purchasing
-        self.buy_range = (0.00, 20.00)
+        self.buy_range = (6.00, 40.00)
 
         # All stocks available to buy/sell
         self.candidates = []
@@ -59,10 +59,11 @@ class NoDayTradesAlgorithm(Algorithm):
         # File keeping track of ages
         self.age_file = age_file
 
+        # List of categories for stocks to be traded
+        self.categories = [ Tag.TOP_MOVERS, Tag.MOST_POPULAR, Tag.INVESTMENT_OR_TRUST ]
+
         # Call super.__init__
         Algorithm.__init__(self, query, portfolio, sec_interval, name = "No Day Trades", buy_range = self.buy_range, debug = self.debug)
-
-        self.on_market_will_open()
 
     # initialize:void
     # NOTE: Configures the algorithm to run indefinitely.
@@ -123,8 +124,10 @@ class NoDayTradesAlgorithm(Algorithm):
 
     def generate_candidates(self):
 
+        Algorithm.log(self, "Generating candidates for categories: " + str([ c.value for c in self.categories ]))
+
         # Get all fundamentals within the buy range
-        unsorted_fundamentals = self.query.get_fundementals_by_criteria(self.buy_range)
+        unsorted_fundamentals = self.query.get_fundamentals_by_criteria(self.buy_range, self.categories)
 
         # Sort the unsorted fundamentals by low price (close would be preferred, but is unavailable)
         candidate_fundamentals = sorted(unsorted_fundamentals, key=lambda fund: fund['low'])
@@ -197,7 +200,7 @@ class NoDayTradesAlgorithm(Algorithm):
         for quote in self.portfolio.get_quotes():
 
             # Assure the given quote is not part of any open orders
-            if quote.symbol not in open_order_symbols:
+            if quote.symbol not in open_order_symbols and quote.count > 0:
 
                 # Get the number of shares of the stock in the given portfolio
                 stock_shares = quote.count

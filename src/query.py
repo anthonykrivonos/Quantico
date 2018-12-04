@@ -32,11 +32,19 @@ class Query:
     ##           ##
 
 
-    # get_fundementals_by_criteria:[String]
+    # get_fundamentals_by_criteria:[String]
     # param price_range:(float, float) => High and low prices for the queried fundamentals.
     # returns List of symbols that fit the given criteria.
-    def get_fundementals_by_criteria(self, price_range = (0.00, sys.maxsize)):
-        all_symbols = [ instrument['symbol'] for instrument in self.trader.instruments_all() ]
+    def get_fundamentals_by_criteria(self, price_range = (0.00, sys.maxsize), tags = None):
+        all_symbols = []
+        if tags is not None and tags is not []:
+            if isinstance(tags, Enum):
+                all_symbols = self.get_by_tag(tag)
+            else:
+                for tag in tags:
+                    all_symbols += self.get_by_tag(tag)
+        else:
+            all_symbols = [ instrument['symbol'] for instrument in self.trader.instruments_all() ]
         queried_fundamentals = []
         for symbol in all_symbols:
             try:
@@ -51,16 +59,9 @@ class Query:
     # get_symbols_by_criteria:[String]
     # param price_range:(float, float) => High and low prices for the queried symbols.
     # returns List of symbols that fit the given criteria.
-    def get_symbols_by_criteria(self, price_range = (0.00, sys.maxsize)):
-        all_symbols = [ instrument['symbol'] for instrument in self.trader.instruments_all() ]
-        queried_symbols = []
-        for symbol in all_symbols:
-            try:
-                fundamentals = self.get_fundamentals(symbol)
-                if fundamentals is not None and 'low' in fundamentals and 'high' in fundamentals and float(fundamentals['low'] or -1) >= price_range[0] and float(fundamentals['high'] or sys.maxsize + 1) <= price_range[1]:
-                    queried_symbols.append(symbol)
-            except Exception as e:
-                continue
+    def get_symbols_by_criteria(self, price_range = (0.00, sys.maxsize), tags = None):
+        queried_fundamentals = self.get_fundamentals_by_criteria(price_range, tags)
+        queried_symbols = [ fundamentals['symbol'] for fundamentals in queried_fundamentals ]
         return queried_symbols
 
     # get_current_price:[String:String]
@@ -298,7 +299,6 @@ class Query:
         orders = self.trader.order_history(None)['results']
         cancelled_order_ids = []
         for order in orders:
-            print(order)
             if order['state'] == 'queued':
                 self.trader.cancel_order(order['id'])
                 cancelled_order_ids.append(order['id'])
