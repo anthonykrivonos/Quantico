@@ -16,6 +16,7 @@ from utility import *
 from enums import *
 from algorithms import *
 from models import *
+from ml import *
 
 # Plotting
 import numpy as np
@@ -46,6 +47,10 @@ my_port = query.user_portfolio()
 # print(history)
 
 # print(my_port.sharpe_optimization())
+
+# View news sentiments
+# news_sentiments = [ str(Sentiment(res['title'])) for res in query.get_news("MSFT")['results'] ]
+# print(news_sentiments)
 
 # Run algorithm
 NoDayTradesAlgorithm(query, my_port, age_file='data/ages.txt')

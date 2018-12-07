@@ -60,3 +60,9 @@ class Quintuple(Enum):
     CLOSE = 2
     HIGH = 3
     LOW = 4
+
+# Bounds Enum
+class Emotion(Enum):
+    POSITIVE = 1     # positive emotion
+    NEUTRAL = 0      # neutral emotion
+    NEGATIVE = -1    # negative emotion

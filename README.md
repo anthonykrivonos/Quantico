@@ -15,14 +15,15 @@ This project uses my fork of [Jamonek's](https://github.com/Jamonek/Robinhood) R
 1. Clone this repository.
 2. Open a terminal window and `cd` to the project.
 3. Install all required dependencies with `pip install -r requirements.txt`.
-4. Create a file called `.env` and fill it with your credentials:
+4. Install `textblob` with `python -m textblob.download_corpora lite`.
+5. Create a file called `.env` and fill it with your credentials:
 
 ```
 EMAIL=yourEmail@probably.com
 PASSWORD=yourPassword123
 ```
 
-5. Run the driver with `python driver/run.py`. It will use `python-dotenv` to load your `EMAIL` and `PASSWORD`, so you don't have to worry about hardcoding these credentials.
+6. Run the driver with `python driver/run.py`. It will use `python-dotenv` to load your `EMAIL` and `PASSWORD`, so you don't have to worry about hardcoding these credentials.
 
 ## Contributing
 
