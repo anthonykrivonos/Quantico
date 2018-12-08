@@ -35,9 +35,9 @@ class Sentiment():
 
     @staticmethod
     def get_emotion(polarity):
-        if polarity > 0.5:
+        if polarity > 0.2:
             return Emotion.POSITIVE
-        elif polarity > -0.5:
+        elif polarity > -0.2:
             return Emotion.NEUTRAL
         return Emotion.NEGATIVE
 

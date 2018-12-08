@@ -49,7 +49,12 @@ my_port = query.user_portfolio()
 # print(my_port.sharpe_optimization())
 
 # View news sentiments
-# news_sentiments = [ str(Sentiment(res['title'])) for res in query.get_news("MSFT")['results'] ]
+# news = [
+#     "AAPL stock plummets 5%",
+#     "Don't buy apple stocks"
+# ]
+# news_sentiments = [ str(Sentiment(n)) for n in news ]
+# news_sentiments = [ str(Sentiment(res['title'])) for res in query.get_news("AAPL")['results'] ]
 # print(news_sentiments)
 
 # Run algorithm
