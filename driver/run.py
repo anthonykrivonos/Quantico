@@ -59,3 +59,4 @@ my_port = query.user_portfolio()
 
 # Run algorithm
 NoDayTradesAlgorithm(query, my_port, age_file='data/ages.txt')
+# TopMoversNoDayTradesAlgorithm(query, my_port)
