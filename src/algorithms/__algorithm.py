@@ -64,7 +64,8 @@ class Algorithm:
         # Schedule event functions
         sec_interval = self.sec_interval
         self.on_custom_timer(lambda: self.on_market_will_open(), start_d64 = self.pre_open_hour)
-        self.on_custom_timer(lambda: self.on_market_open(), repeat_sec = sec_interval, start_d64 = self.open_hour, stop_d64 = self.close_hour)
+        self.on_custom_timer(lambda: self.on_market_open(), start_d64 = self.open_hour)
+        self.on_custom_timer(lambda: self.while_market_open(), repeat_sec = sec_interval, start_d64 = self.open_hour, stop_d64 = self.close_hour)
         self.on_custom_timer(lambda: self.on_market_close(), start_d64 = self.close_hour)
 
         # Prevent day trading:
@@ -97,9 +98,15 @@ class Algorithm:
         pass
 
     # on_market_open:Void
-    # NOTE: Called exactly when the market opens. Cannot include a buy or sell.
+    # NOTE: Called exactly when the market opens.
     def on_market_open(self):
-        self.log("Market has opened.")
+        self.log("Market just opened.")
+        pass
+
+    # while_market_open:Void
+    # NOTE: Called on an interval while market is open.
+    def while_market_open(self):
+        self.log("Market currently open.")
         pass
 
     # on_market_close:Void

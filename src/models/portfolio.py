@@ -68,7 +68,7 @@ class Portfolio:
         self.__symbol_map = {}
         for quote in self.__quotes:
             self.__total_assets += quote.count
-            self.__symbol_map[quote.symbol] = True
+            self.__symbol_map[quote.symbol] = quote
         if self.__total_assets > 0:
             for quote in self.__quotes:
                 quote.weight = quote.count / self.__total_assets
@@ -89,6 +89,11 @@ class Portfolio:
     # param symbol:String => A string stock symbol.
     def is_symbol_in_portfolio(self, symbol):
         return symbol in self.__symbol_map
+
+    # is_symbol_in_portfolio:Boolean
+    # param symbol:String => A string stock symbol.
+    def get_quote_from_portfolio(self, symbol):
+        return self.__symbol_map[symbol] if self.is_symbol_in_portfolio(symbol) else None
 
     ##
     #

@@ -50,9 +50,15 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         pass
 
     # on_market_open:Void
-    # NOTE: Called exactly when the market opens. Cannot include a buy or sell.
+    # NOTE: Called exactly when the market opens.
     def on_market_open(self):
         Algorithm.on_market_open(self)
+        pass
+
+    # while_market_open:Void
+    # NOTE: Called on an interval while market is open.
+    def while_market_open(self):
+        Algorithm.while_market_open(self)
 
         self.perform_buy_sell()
         pass
