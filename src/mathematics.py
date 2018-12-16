@@ -17,6 +17,9 @@ from enums import *
 # Math
 from math import exp
 
+# Warnings
+import warnings
+
 # Abstract: Math functions for dataset analysis.
 
 # Math Methods
@@ -28,9 +31,15 @@ class Math:
     # returns A list of length |deg| for coefficients of the polynomial.
     @staticmethod
     def poly(x, y, degree):
-        x = np.array(x)
-        y = np.array(y)
-        return np.polyfit(x, y, degree)
+        warnings.filterwarnings("error")
+        while degree > 0:
+            try:
+                x = np.array(x)
+                y = np.array(y)
+                return np.polyfit(x, y, degree)
+            except:
+                degree -= 1
+        return np.polyfit(x, y, 0)
 
     # deriv:[float]
     # param poly:[float] => A list of length |deg| for coefficients of the polynomial.

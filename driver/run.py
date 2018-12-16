@@ -58,5 +58,6 @@ my_port = query.user_portfolio()
 # print(news_sentiments)
 
 # Run algorithm
-NoDayTradesAlgorithm(query, my_port, age_file='data/ages.txt')
+# NoDayTradesAlgorithm(query, my_port, age_file='data/ages.txt')
 # TopMoversNoDayTradesAlgorithm(query, my_port)
+ShortIntensiveAlgorithm(query, my_port)

@@ -135,6 +135,8 @@ class Algorithm:
     # param type:String => The string representation of the type of message this is.
     # NOTE: Logs the output and adds it to the list of logs.
     def log(self, message, type = 'log'):
+        if not isinstance(message, str):
+            message = str(message)
         if type == 'error' or type == 'w' or type == 'err':
             self.logs.append(Utility.error(message))
         elif type == 'warning' or type == 'w' or type == 'warn':

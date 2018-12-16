@@ -56,7 +56,7 @@ class ShortIntensiveAlgorithm(Algorithm):
         self.stock_delta_perc = {}
 
         # Call super.__init__
-        Algorithm.__init__(self, query, portfolio, sec_interval, name = "No Day Trades", buy_range = self.buy_range, debug = self.debug)
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Short Intensive", buy_range = self.buy_range, debug = self.debug)
 
     # initialize:void
     # NOTE: Configures the algorithm to run indefinitely.
@@ -68,6 +68,10 @@ class ShortIntensiveAlgorithm(Algorithm):
 
         # Store the symbols of each candidate fundamental into a separate array
         self.symbols = sorted([ fund['symbol'] for fund in unsorted_fundamentals ])
+
+        # Append the user's owned symbols
+        for quote in self.portfolio.get_quotes():
+            self.symbols.append(quote.symbol)
 
         for symbol in self.symbols:
             self.stock_data[symbol] = []
@@ -124,10 +128,10 @@ class ShortIntensiveAlgorithm(Algorithm):
         for symbol in self.stock_data:
 
             # Get current price of the stock
-            current_price = self.query.get_current_price(quote.symbol)
+            current_price = self.query.get_current_price(symbol)
 
             # Append current price to list
-            self.stock_data[symbol].append(Price(self.utility.now_datetime64(), current_price, current_price, current_price, current_price))
+            self.stock_data[symbol].append(Price(Utility.now_timestamp(), current_price, current_price, current_price, current_price))
 
             # Turn stock data into polynomial
             t = y = []
@@ -137,17 +141,23 @@ class ShortIntensiveAlgorithm(Algorithm):
 
             # Get polynomial for symbol
             try:
-                symbol_poly = Math.poly(t, y, 3)
-            except:
                 symbol_poly = Math.poly(t, y, 2)
+            except:
+                symbol_poly = Math.poly(t, y, 1)
 
             # First derivative
-            self.stock_delta1[symbol] = Math.eval(Math.deriv(symbol_poly, 1))
+            self.stock_delta1[symbol] = Math.eval(Math.deriv(symbol_poly, 1), t[-1])
             self.stock_delta_perc[symbol] = self.stock_delta1[symbol]/y[-1]
 
             # Second derivative
-            self.stock_delta2[symbol] = Math.eval(Math.deriv(symbol_poly, 2))
+            self.stock_delta2[symbol] = Math.eval(Math.deriv(symbol_poly, 2), t[-1])
 
+        Algorithm.log(self, "Rates of change:")
+        Algorithm.log(self, self.stock_delta1)
+        Algorithm.log(self, "Percentage change:")
+        Algorithm.log(self, self.stock_delta_perc)
+        Algorithm.log(self, "Concavity:")
+        Algorithm.log(self, self.stock_delta2)
         pass
 
     # perform_buy_sell:Void
@@ -159,12 +169,34 @@ class ShortIntensiveAlgorithm(Algorithm):
         symbols_in_port = [ quote.symbol for quote in port ]
 
         for symbol in self.symbols:
+
+            # Get stock's price
+            current_price = self.query.get_current_price(quote.symbol)
+
             if self.stock_delta_perc[symbol] >= self.threshold/2:
-                # Algorithm.buy(self, symbol, stock_shares, None, current_price)
+                # Buy if it reaches above half the buy threshold
+                cash = self.query.user_buying_power()
+                spend_amount = min(cash, cash * self.stock_delta_perc[symbol] * 10)
+                stock_shares = self.portfolio.get_quote_from_portfolio(symbol).count or 0
+                stock_shares_to_buy = round(spend_amount/current_price)
+                did_buy = Algorithm.buy(self, symbol, stock_shares_to_buy, None, current_price)
+                if did_buy:
+                    if stock_shares == 0:
+                        self.stock_data[symbol] = []
+                        self.stock_delta1[symbol] = 0
+                        self.stock_delta2[symbol] = 0
+                        self.stock_delta_perc[symbol] = 0
+
             elif self.stock_delta_perc[symbol] <= -self.threshold:
+                # Sell if it reaches below the short threshold
                 if self.portfolio.is_symbol_in_portfolio(symbol):
                     stock_shares = self.portfolio.get_quote_from_portfolio(symbol).count or 0
-                    Algorithm.sell(self, symbol, stock_shares, None, current_price)
+                    did_sell = Algorithm.sell(self, symbol, stock_shares, None, current_price)
+                    if did_sell:
+                        self.stock_data[symbol] = []
+                        self.stock_delta1[symbol] = 0
+                        self.stock_delta2[symbol] = 0
+                        self.stock_delta_perc[symbol] = 0
 
         Algorithm.log(self, "Finished run of perform_buy_sell")
 

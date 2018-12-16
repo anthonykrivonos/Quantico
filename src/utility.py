@@ -72,11 +72,17 @@ class Utility:
     def now_timestamp():
         return time()
 
+    # now_datetime:datetime
+    # returns The current date as a datetime.
+    @staticmethod
+    def now_datetime():
+        return datetime.datetime.now()
+
     # now_datetime64:datetime64
     # returns The current date as a datetime64.
     @staticmethod
     def now_datetime64():
-        return np.datetime64(datetime.datetime.now())
+        return np.datetime64(Utility.now_datetime())
 
     # today_date_string:String
     # returns The current date as a formatted string YYYY-MM-dd.
