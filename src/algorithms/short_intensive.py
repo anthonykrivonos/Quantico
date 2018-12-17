@@ -158,7 +158,6 @@ class ShortIntensiveAlgorithm(Algorithm):
         Algorithm.log(self, self.stock_delta_perc)
         Algorithm.log(self, "Concavity:")
         Algorithm.log(self, self.stock_delta2)
-        pass
 
     # perform_buy_sell:Void
     def perform_buy_sell(self):
@@ -181,7 +180,7 @@ class ShortIntensiveAlgorithm(Algorithm):
                 stock_shares_to_buy = round(spend_amount/current_price)
                 did_buy = Algorithm.buy(self, symbol, stock_shares_to_buy, None, current_price)
                 if did_buy:
-                    if stock_shares == 0:
+                    if symbol not in self.stock_data:
                         self.stock_data[symbol] = []
                         self.stock_delta1[symbol] = 0
                         self.stock_delta2[symbol] = 0
@@ -192,11 +191,6 @@ class ShortIntensiveAlgorithm(Algorithm):
                 if self.portfolio.is_symbol_in_portfolio(symbol):
                     stock_shares = self.portfolio.get_quote_from_portfolio(symbol).count or 0
                     did_sell = Algorithm.sell(self, symbol, stock_shares, None, current_price)
-                    if did_sell:
-                        self.stock_data[symbol] = []
-                        self.stock_delta1[symbol] = 0
-                        self.stock_delta2[symbol] = 0
-                        self.stock_delta_perc[symbol] = 0
 
         Algorithm.log(self, "Finished run of perform_buy_sell")
 
