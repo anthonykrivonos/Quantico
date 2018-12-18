@@ -147,7 +147,7 @@ class ShortIntensiveAlgorithm(Algorithm):
 
             # First derivative
             self.stock_delta1[symbol] = Math.eval(Math.deriv(symbol_poly, 1), t[-1])
-            self.stock_delta_perc[symbol] = self.stock_delta1[symbol]/y[-1]
+            self.stock_delta_perc[symbol] = Math.p_div(self.stock_delta1[symbol], y[-1])
 
             # Second derivative
             self.stock_delta2[symbol] = Math.eval(Math.deriv(symbol_poly, 2), t[-1])
@@ -170,12 +170,12 @@ class ShortIntensiveAlgorithm(Algorithm):
         for symbol in self.symbols:
 
             # Get stock's price
-            current_price = self.query.get_current_price(quote.symbol)
+            current_price = self.query.get_current_price(symbol)
 
             if self.stock_delta_perc[symbol] >= self.threshold/2:
                 # Buy if it reaches above half the buy threshold
                 cash = self.query.user_buying_power()
-                spend_amount = min(cash, cash * self.stock_delta_perc[symbol] * 10)
+                spend_amount = min(cash, Math.p_mul(Math.p_mul(cash, self.stock_delta_perc[symbol]), 10))
                 stock_shares = self.portfolio.get_quote_from_portfolio(symbol).count or 0
                 stock_shares_to_buy = round(spend_amount/current_price)
                 did_buy = Algorithm.buy(self, symbol, stock_shares_to_buy, None, current_price)
