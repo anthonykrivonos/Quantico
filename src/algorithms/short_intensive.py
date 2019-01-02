@@ -1,6 +1,6 @@
 # Anthony Krivonos
 # Oct 29, 2018
-# src/alg/nodaytrades.py
+# src/algorithms/short_intensive.py
 
 # Global Imports
 import numpy as np

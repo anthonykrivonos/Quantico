@@ -22,7 +22,23 @@ EMAIL=yourEmail@probably.com
 PASSWORD=yourPassword123
 ```
 
-6. Run the driver with `python driver/run.py`. It will use `python-dotenv` to load your `EMAIL` and `PASSWORD`, so you don't have to worry about hardcoding these credentials.
+5. Run the driver with `python3 driver/run.py`. It will use `python-dotenv` to load your `EMAIL` and `PASSWORD`, so you don't have to worry about hardcoding these credentials.
+
+### Creating Your Own Algorithm
+
+1. Copy and paste `src/algorithms/__skeleton.py` into the same folder. Rename it to something of your choosing, and be sure to change the class name.
+2. Add `from algorithms.your_algorithm import *` to `src/algorithms/__init__.py`.
+3. Follow the instructions in the skeleton file to write your algorithm.
+4. After writing your algorithm, call it as follows at the bottom of `driver/run.py`:
+
+
+- If backtesting: `YourAlgorithm(query, my_port, test=True, cash=1000)` ($1000 is the starting cash amount)
+
+- If live trading: `YourAlgorithm(query, my_port)`
+
+
+5. Run your code with `python3 driver/run.py`.
+
 
 ## Contributing
 

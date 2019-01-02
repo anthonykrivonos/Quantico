@@ -24,8 +24,9 @@ import numpy as np
 # Abstract: Main script to run algorithms from.
 
 #
-#   Driver
+#   Setup
 #
+
 # Load EMAIL and PASSWORD constants from .env
 dotenv = load_dotenv(join(dirname(__file__)+"/../", '.env'))
 EMAIL = os.getenv("EMAIL")
@@ -39,25 +40,14 @@ except Exception as e:
     Utility.error("Could not log in: " + str(e))
     sys.exit()
 
+#
+#   Portfolio
+#
+
 my_port = query.user_portfolio()
-# their_port = Portfolio(query, [Quote("AAPL", 0), Quote("GOOG", 0)], "Cool Port")
 
-# history = my_port.get_history()
-# print(my_port.get_market_data_tuple())
-# print(history)
+#
+#   Driver (Your Algorithms Here)
+#
 
-# print(my_port.sharpe_optimization())
-
-# View news sentiments
-# news = [
-#     "AAPL stock plummets 5%",
-#     "Don't buy apple stocks"
-# ]
-# news_sentiments = [ str(Sentiment(n)) for n in news ]
-# news_sentiments = [ str(Sentiment(res['title'])) for res in query.get_news("AAPL")['results'] ]
-# print(news_sentiments)
-
-# Run algorithm
-# NoDayTradesAlgorithm(query, my_port, age_file='data/ages.txt')
-# TopMoversNoDayTradesAlgorithm(query, my_port)
 NoDayTradesAlgorithm(query, my_port, test=True, cash=1000)

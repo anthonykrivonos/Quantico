@@ -56,7 +56,7 @@ class Algorithm:
         if self.test:
             # User is performing a backtest, don't schedule event functions
             self.log("Initialized algorithm \'" + self.name + "\' for backtesting...", 't')
-            self.backtest()
+            self.__backtest()
         else:
             # User is live trading, schedule event functions
             self.log("Initialized algorithm \'" + self.name + "\' for live trading...")
@@ -99,9 +99,9 @@ class Algorithm:
         self.log('Today Bought: ' + str(self.buy_list))
         self.log('Today Sold  : ' + str(self.sell_list))
 
-    # reset_for_next_day:Void
+    # __reset_for_next_day:Void
     # NOTE: Resets the algorithm for execution the following day.
-    def reset_for_next_day(self):
+    def __reset_for_next_day(self):
         self.buy_list = []
         self.sell_list = []
         if not self.test:
@@ -118,9 +118,9 @@ class Algorithm:
     def on_market_will_open(self, cash = None, prices = None):
         self.log("Market will open.")
         self.event = Event.ON_MARKET_WILL_OPEN
-        self.reset_for_next_day()
-        self.update_cash(cash)
-        self.update_prices(prices)
+        self.__reset_for_next_day()
+        self.__update_cash(cash)
+        self.__update_prices(prices)
         pass
 
     # on_market_open:Void
@@ -130,8 +130,8 @@ class Algorithm:
     def on_market_open(self, cash = None, prices = None):
         self.log("Market just opened.")
         self.event = Event.ON_MARKET_OPEN
-        self.update_cash(cash)
-        self.update_prices(prices)
+        self.__update_cash(cash)
+        self.__update_prices(prices)
         pass
 
     # while_market_open:Void
@@ -141,8 +141,8 @@ class Algorithm:
     def while_market_open(self, cash = None, prices = None):
         self.log("Market currently open.")
         self.event = Event.WHILE_MARKET_OPEN
-        self.update_cash(cash)
-        self.update_prices(prices)
+        self.__update_cash(cash)
+        self.__update_prices(prices)
         pass
 
     # on_market_close:Void
@@ -152,8 +152,8 @@ class Algorithm:
     def on_market_close(self, cash = None, prices = None):
         self.log("Market has closed.")
         self.event = Event.ON_MARKET_CLOSE
-        self.update_cash(cash)
-        self.update_prices(prices)
+        self.__update_cash(cash)
+        self.__update_prices(prices)
         pass
 
     # on_custom_timer:Void
@@ -224,10 +224,10 @@ class Algorithm:
             return
         return self.query.get_current_price(symbol)
 
-    # update_prices:Void
+    # __update_prices:Void
     # param prices:{String:Float}? => Map of prices to update the global map to.
     # NOTE: Updates map of symbols to their current ask prices.
-    def update_prices(self, prices = None):
+    def __update_prices(self, prices = None):
         if prices is None:
             # If prices is None, update it with current market values.
             self.prices = {}
@@ -237,10 +237,10 @@ class Algorithm:
             # Otherwise, update it with given values.
             self.prices = prices
 
-    # update_cash:Void
+    # __update_cash:Void
     # param cash:Float => User's buying power.
     # NOTE: Updates user's buying power.
-    def update_cash(self, cash = None):
+    def __update_cash(self, cash = None):
         if cash is None:
             # If cash is None, update it with current user's buying power.
             self.cash = self.query.user_buying_power()
@@ -252,7 +252,9 @@ class Algorithm:
     # Backtesting
     #
 
-    def backtest(self):
+    # __backtest:Void
+    # NOTE: Performs a backtest on the algorithm.
+    def __backtest(self):
         # Map each symbol to a list of historical prices.
         historicals_map, historical_times = self.portfolio.get_history_tuple(Span.DAY, Span.YEAR, Bounds.REGULAR)
         symbols = self.portfolio.get_symbols()
