@@ -24,7 +24,7 @@ class Algorithm:
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
     # param name:String => Name of the algorithm.
-    def __init__(self, query, portfolio, sec_interval = 900, name = "Algorithm", buy_range = (0.00, sys.maxsize), debug = False):
+    def __init__(self, query, portfolio, sec_interval = 900, name = "Algorithm", buy_range = (0.00, sys.maxsize), test = False, cash = 0.00):
 
         # Initialize properties
         self.name = name                      # String name of the algorithm
@@ -34,41 +34,47 @@ class Algorithm:
         self.buy_list = []                    # List of stocks bought in the past day
         self.sell_list = []                   # List of stocks sold in the past day
         self.buy_range = buy_range            # Range of prices for purchasing stocks
-        self.debug = debug                    # Set to True if buys and sells should not go through
         self.logs = []                        # List of logged output
+        self.prices = {}                      # Map of symbols to the current ask price of one share
+        self.cash = cash                      # Float buying power amount.
 
-        # Declare the start of a run
-        self.log("Initialized Algorithm: \'" + name + "\'")
+        # Backtesting properties
+        self.test = test                     # Set to True if backtesting
 
         # Initialize the algorithm
         self.initialize()
 
     #
-    # Event Functions
+    # Initialization Functions
     #
 
     # initialize:void
     # NOTE: Configures the algorithm to run indefinitely.
     def initialize(self):
+        if self.test:
+            # User is performing a backtest, don't schedule event functions
+            self.log("Initialized algorithm \'" + self.name + "\' for backtesting...")
+            self.backtest()
+        else:
+            # User is live trading, schedule event functions
+            self.log("Initialized algorithm \'" + self.name + "\' for live trading...")
 
-        # Actual upcoming open and close market hours
-        market_hours = Utility.get_next_market_hours()
-        self.pre_open_hour = market_hours[0] - datetime.timedelta(hours=1)
-        self.open_hour = market_hours[0]
-        self.close_hour = market_hours[1]
+            # Actual upcoming open and close market hours
+            market_hours = Utility.get_next_market_hours()
+            self.pre_open_hour = market_hours[0] - datetime.timedelta(hours=1)
+            self.open_hour = market_hours[0]
+            self.close_hour = market_hours[1]
 
-        # Indicate the market hours
-        self.log("Next Market Open:  " + str(self.open_hour))
-        self.log("Next Market Close: " + str(self.close_hour))
+            # Indicate the market hours
+            self.log("Next Market Open:  " + str(self.open_hour))
+            self.log("Next Market Close: " + str(self.close_hour))
 
-        # Schedule event functions
-        sec_interval = self.sec_interval
-        self.on_custom_timer(lambda: self.on_market_will_open(), start_d64 = self.pre_open_hour)
-        self.on_custom_timer(lambda: self.on_market_open(), start_d64 = self.open_hour)
-        self.on_custom_timer(lambda: self.while_market_open(), repeat_sec = sec_interval, start_d64 = self.open_hour, stop_d64 = self.close_hour)
-        self.on_custom_timer(lambda: self.on_market_close(), start_d64 = self.close_hour)
-
-        # Prevent day trading:
+            # Schedule event functions
+            sec_interval = self.sec_interval
+            self.on_custom_timer(lambda: self.on_market_will_open(), start_d64 = self.pre_open_hour)
+            self.on_custom_timer(lambda: self.on_market_open(), start_d64 = self.open_hour)
+            self.on_custom_timer(lambda: self.while_market_open(), repeat_sec = sec_interval, start_d64 = self.open_hour, stop_d64 = self.close_hour)
+            self.on_custom_timer(lambda: self.on_market_close(), start_d64 = self.close_hour)
 
         # Refresh buy and sell lists
         self.buy_list = []
@@ -91,28 +97,55 @@ class Algorithm:
         self.log('Today Bought: ' + str(self.buy_list))
         self.log('Today Sold  : ' + str(self.sell_list))
 
+    # reset_for_next_day:Void
+    # NOTE: Resets the algorithm for execution the following day.
+    def reset_for_next_day(self):
+        self.buy_list = []
+        self.sell_list = []
+
+    #
+    # Event Functions
+    #
+
     # on_market_will_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called an hour before the market opens.
-    def on_market_will_open(self):
+    def on_market_will_open(self, cash = None, prices = None):
         self.log("Market will open.")
+        self.reset_for_next_day()
+        self.update_cash(cash)
+        self.update_prices(prices)
         pass
 
     # on_market_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called exactly when the market opens.
-    def on_market_open(self):
+    def on_market_open(self, cash = None, prices = None):
         self.log("Market just opened.")
+        self.update_cash(cash)
+        self.update_prices(prices)
         pass
 
     # while_market_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called on an interval while market is open.
-    def while_market_open(self):
+    def while_market_open(self, cash = None, prices = None):
         self.log("Market currently open.")
+        self.update_cash(cash)
+        self.update_prices(prices)
         pass
 
     # on_market_close:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called exactly when the market closes.
-    def on_market_close(self):
+    def on_market_close(self, cash = None, prices = None):
         self.log("Market has closed.")
+        self.update_cash(cash)
+        self.update_prices(prices)
         pass
 
     # on_custom_timer:Void
@@ -150,6 +183,109 @@ class Algorithm:
     def get_logs(self, last):
         count = -min(len(self.logs), last if last is not None else len(self.logs))
         return self.logs[count:]
+
+    #
+    # Backtesting and Live Value Functions
+    #
+
+    # price:Void
+    # param symbol:String => Symbol.
+    # Returns the current price of the given symbol.
+    def price(self, symbol):
+        if symbol in self.prices:
+            return self.prices[symbol]
+        return self.query.get_current_price(symbol)
+
+    # update_prices:Void
+    # param prices:{String:Float}? => Map of prices to update the global map to.
+    # NOTE: Updates map of symbols to their current ask prices.
+    def update_prices(self, prices = None):
+        if prices is None:
+            # If prices is None, update it with current market values.
+            self.prices = {}
+            for quote in self.portfolio.get_quotes():
+                self.prices[quote.symbol] = self.query.get_current_price(quote.symbol)
+        else:
+            # Otherwise, update it with given values.
+            self.prices = prices
+
+    # update_cash:Void
+    # param cash:Float => User's buying power.
+    # NOTE: Updates user's buying power.
+    def update_cash(self, cash = None):
+        if cash is None:
+            # If cash is None, update it with current user's buying power.
+            self.cash = self.query.user_buying_power()
+        else:
+            # Otherwise, update it with given value.
+            self.cash = cash
+
+    #
+    # Backtesting
+    #
+
+    def backtest(self):
+        # Map each symbol to a list of historical prices.
+        historicals_map, historical_times = self.portfolio.get_history_tuple(Span.DAY, Span.YEAR, Bounds.REGULAR)
+        symbols = self.portfolio.get_symbols()
+
+        # Assure enough historicals data will be processed
+        if len(historical_times) == 0:
+            self.log("Not enough data for a backtest.", 'error')
+            return
+
+        # Assure enough cash is allocated
+        if self.cash == 0.00:
+            self.log("Not enough starting cash for backtest.", 'error')
+            return
+
+        self.log("Starting backtest from " + Utility.get_timestamp_string(historical_times[0]) + " to " + Utility.get_timestamp_string(historical_times[-1]))
+
+        start_cash = self.cash
+        current_cash = self.cash
+
+        # Run through timeline
+        for time in historical_times:
+            # Announce progress
+            percentage = (current_cash - start_cash) / start_cash * 100
+            difference = current_cash - start_cash
+            if percentage >= 0.00:
+                self.log(Utility.get_timestamp_string(time) + " (backtest): cash($" + str(current_cash) + "), gain(" + str(abs(percentage)) + "%, $" + str(abs(difference)) + ")")
+            else:
+                self.log(Utility.get_timestamp_string(time) + " (backtest): cash($" + str(current_cash) + "), loss(" + str(abs(percentage)) + "%, $" + str(abs(difference)) + ")")
+
+            # Store five maps of symbols to instantaneous prices
+            on_market_will_open_prices = {}
+            on_market_open_prices = {}
+            while_market_open_low_prices = {}
+            while_market_open_high_prices = {}
+            on_market_close_prices = {}
+            for symbol in symbols:
+                price = historicals_map[symbol][time]
+                on_market_will_open_prices[symbol] = price.open
+                on_market_open_prices[symbol] = price.open
+                while_market_open_low_prices[symbol] = price.low
+                while_market_open_high_prices[symbol] = price.high
+                on_market_close_prices[symbol] = price.close
+
+            # Execute events with appropriate prices
+            self.on_market_will_open(current_cash, on_market_will_open_prices)
+            self.on_market_open(current_cash, on_market_open_prices)
+            self.while_market_open(current_cash, while_market_open_low_prices)
+            self.while_market_open(current_cash, while_market_open_high_prices)
+            self.on_market_close(current_cash, on_market_close_prices)
+
+        end_cash = current_cash
+
+        # Announce final progress
+        final_percentage = (end_cash - start_cash) / start_cash * 100
+        final_difference = end_cash - start_cash
+        if final_percentage >= 0.00:
+            self.log("Final results (backtest): cash($" + str(end_cash) + "), gain(" + str(abs(final_percentage)) + "%, $" + str(abs(final_difference)) + ")")
+        else:
+            self.log("Final results (backtest): cash($" + str(end_cash) + "), loss(" + str(abs(final_percentage)) + "%, $" + str(abs(final_difference)) + ")")
+        pass
+
     #
     # Execution Functions
     #
@@ -162,19 +298,21 @@ class Algorithm:
     # NOTE: Safely executes a buy order outside of open hours, if possible.
     def buy(self, symbol, quantity, stop = None, limit = None):
         try:
-            if limit <= self.buy_range[1] and limit >= self.buy_range[0] and symbol not in self.sell_list:
-                if not self.debug:
+            price = limit if not None else stop
+            if price <= self.buy_range[1] and price >= self.buy_range[0] and symbol not in self.sell_list:
+                if not self.test:
                     self.query.exec_buy(symbol, quantity, stop, limit)
                     self.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 else:
-                    Utility.warning("Would have bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop) + " if not in 'debug' mode")
+                    self.log("Backtest: Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+                self.cash -= (quantity * price)
                 self.buy_list.append(symbol)
                 self.portfolio.add_quote(Quote(symbol, quantity))
                 return True
             else:
-                if limit > self.buy_range[1]:
+                if price > self.buy_range[1]:
                     Utility.error("Could not buy " + symbol + ": Stock too expensive")
-                elif limit < self.buy_range[0]:
+                elif price < self.buy_range[0]:
                     Utility.error("Could not buy " + symbol + ": Stock too cheap")
                 elif symbol in self.sell_list:
                     Utility.error("Could not buy " + symbol + ": Stock already sold today")
@@ -190,12 +328,14 @@ class Algorithm:
     # NOTE: Safely executes a sell order outside of open hours, if possible.
     def sell(self, symbol, quantity, stop = None, limit = None):
         try:
+            price = limit if not None else stop
             if symbol not in self.buy_list:
-                if not self.debug:
+                if not self.test:
                     self.query.exec_sell(symbol, quantity, stop, limit)
                     self.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
                 else:
-                    Utility.warning("Would have sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop) + " if not in 'debug' mode")
+                    self.log("Backtest: Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
+                self.cash += (quantity * price)
                 self.sell_list.append(symbol)
                 self.portfolio.remove_quote(Quote(symbol, quantity))
                 return True
@@ -211,11 +351,11 @@ class Algorithm:
     # NOTE: Safely cancels an order given its ID, if possible.
     def cancel(self, order_id):
         try:
-            if not self.debug:
+            if not self.test:
                 self.query.exec_cancel(order_id)
                 self.log("Cancelled order " + order_id)
             else:
-                Utility.warning("Would have cancelled order " + order_id + " if not in 'debug' mode")
+                self.log("Backtest: Cancelled order " + order_id)
             return True
         except:
             Utility.error("Could not cancel " + symbol + ": A client error occurred")
@@ -225,11 +365,11 @@ class Algorithm:
     # NOTE: Safely cancels all open orders, if possible.
     def cancel_open_orders(self):
         try:
-            if not self.debug:
+            if not self.test:
                 cancelled_order_ids = self.query.exec_cancel_open_orders()
                 Utility.log("Cancelled orders " + str(cancelled_order_ids))
             else:
-                Utility.warning("Would have cancelled all open orders if not in 'debug' mode")
+                self.log("Backtest: Cancelled open orders")
             return True
         except:
             Utility.error("Could not cancel open orders: A client error occurred")

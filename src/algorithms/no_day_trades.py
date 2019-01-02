@@ -22,12 +22,9 @@ class NoDayTradesAlgorithm(Algorithm):
     # __init__:Void
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
-    def __init__(self, query, portfolio, sec_interval = 900, age_file = None):
+    def __init__(self, query, portfolio, sec_interval = 900, age_file = None, test = False, cash = 0.00):
 
         # Initialize properties
-
-        # Set to True if buys and sells should not go through
-        self.debug = False
 
         # Range of prices for stock purchasing
         self.buy_range = (6.00, 40.00)
@@ -63,7 +60,7 @@ class NoDayTradesAlgorithm(Algorithm):
         self.categories = [ Tag.TOP_MOVERS, Tag.MOST_POPULAR, Tag.INVESTMENT_OR_TRUST ]
 
         # Call super.__init__
-        Algorithm.__init__(self, query, portfolio, sec_interval, name = "No Day Trades", buy_range = self.buy_range, debug = self.debug)
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "No Day Trades", buy_range = self.buy_range, test = test, cash = cash)
 
     # initialize:void
     # NOTE: Configures the algorithm to run indefinitely.
@@ -77,15 +74,17 @@ class NoDayTradesAlgorithm(Algorithm):
     #
 
     # on_market_will_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called an hour before the market opens.
-    def on_market_will_open(self):
-        Algorithm.on_market_will_open(self)
+    def on_market_will_open(self, cash = None, prices = None):
+        Algorithm.on_market_will_open(self, cash, prices)
 
         self.candidates, self.candidates_to_trade, self.candidates_to_trade_weight = self.generate_candidates()
 
         lowest_price = self.buy_range[0]
         for quote in self.portfolio.get_quotes():
-            current_price = self.query.get_current_price(quote.symbol)
+            current_price = self.price(quote.symbol)
             if current_price < lowest_price:
                 lowest_price = current_price
             if quote.symbol in self.age:
@@ -104,21 +103,27 @@ class NoDayTradesAlgorithm(Algorithm):
         pass
 
     # on_market_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called exactly when the market opens.
-    def on_market_open(self):
-        Algorithm.on_market_open(self)
+    def on_market_open(self, cash = None, prices = None):
+        Algorithm.on_market_open(self, cash, prices)
         pass
 
     # while_market_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called on an interval while market is open.
-    def while_market_open(self):
-        Algorithm.while_market_open(self)
+    def while_market_open(self, cash = None, prices = None):
+        Algorithm.while_market_open(self, cash, prices)
         pass
 
     # on_market_close:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called exactly when the market closes.
-    def on_market_close(self):
-        Algorithm.on_market_close(self)
+    def on_market_close(self, cash = None, prices = None):
+        Algorithm.on_market_close(self, cash, prices)
 
         Algorithm.cancel_open_orders(self)
 
@@ -184,7 +189,7 @@ class NoDayTradesAlgorithm(Algorithm):
         GAIN_FACTOR = 1.25
 
         # Get the user's buying power, or cash
-        cash = self.query.user_buying_power()
+        cash = self.cash
 
         # Cancel all of the user's open orders
         Algorithm.cancel_open_orders(self)
@@ -212,7 +217,7 @@ class NoDayTradesAlgorithm(Algorithm):
                 stock_shares = quote.count
 
                 # Current price of the given stock
-                current_price = self.query.get_current_price(quote.symbol)
+                current_price = self.price(quote.symbol)
 
                 # Sell if the age has exceeded the immediate sale age and the immediate sale price is greater than the current price
                 if quote.symbol in self.age:
@@ -239,7 +244,7 @@ class NoDayTradesAlgorithm(Algorithm):
                 break
 
             # Store the current price of the candidate stock
-            current_price = self.query.get_current_price(symbol)
+            current_price = self.price(symbol)
 
             # Get the history of the stock
             history = self.portfolio.get_symbol_history(symbol, Span.TEN_MINUTE, Span.DAY)

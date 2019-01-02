@@ -146,6 +146,11 @@ class Portfolio:
     def get_quotes(self):
         return self.__quotes
 
+    # get_symbols:[String]
+    # Returns a list of symbols in the portfolio.
+    def get_symbols(self):
+        return list(map(lambda quote: quote.symbol, self.__quotes))
+
     # get_expected_return:[Quote]
     # Returns a float percentage for the return of this portfolio.
     def get_expected_return(self):
@@ -168,6 +173,29 @@ class Portfolio:
         for quote in self.__quotes:
             historicals[quote.symbol] = list(map(lambda price: price, self.get_symbol_history(quote.symbol, interval, span, bounds)))
         return historicals
+
+    # get_history_tuple:([String:[Float:Price]], [Float])
+    # param symbol:String => String symbol of the instrument.
+    # param interval:Span => Time in between each value. (default: DAY)
+    # param span:Span => Range for the data to be returned. (default: YEAR)
+    # param bounds:Span => The bounds to be included. (default: REGULAR)
+    # returns Tuple containing: (map of symbols to map of float timestamps to Price models, list of all times in historicals map).
+    def get_history_tuple(self, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
+        historicals = {}
+        times = {}
+        time_list = []
+        for quote in self.__quotes:
+            hist_map = {}
+            hist_array = list(map(lambda price: price, self.get_symbol_history(quote.symbol, interval, span, bounds)))
+            for price in hist_array:
+                hist_map[price.time] = price
+                if price.time not in times:
+                    times[price.time] = True
+            historicals[quote.symbol] = hist_map
+        for time in times:
+            time_list.append(time)
+        time_list = sorted(time_list)
+        return (historicals, time_list)
 
     # get_history_tuples:[[(time, open, close, high, low)]]
     # param symbol:String => String symbol of the instrument.

@@ -20,13 +20,13 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     # __init__:Void
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
-    def __init__(self, query, portfolio, sec_interval = 900):
+    def __init__(self, query, portfolio, sec_interval = 900, test = False, cash = 0.00):
 
         # Initialize properties
         self.buy_range = (0.00, 5.00)
 
         # Call super.__init__
-        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Top Movers, No Day Trades", buy_range = self.buy_range)
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Top Movers, No Day Trades", buy_range = self.buy_range, test = test, cash = cash)
 
         self.perform_buy_sell()
 
@@ -42,31 +42,39 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
 
 
     # on_market_will_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called an hour before the market opens.
-    def on_market_will_open(self):
-        Algorithm.on_market_will_open(self)
+    def on_market_will_open(self, cash = None, prices = None):
+        Algorithm.on_market_will_open(self, cash, prices)
 
         self.perform_buy_sell()
         pass
 
     # on_market_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called exactly when the market opens.
-    def on_market_open(self):
-        Algorithm.on_market_open(self)
+    def on_market_open(self, cash = None, prices = None):
+        Algorithm.on_market_open(self, cash, prices)
         pass
 
     # while_market_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called on an interval while market is open.
-    def while_market_open(self):
-        Algorithm.while_market_open(self)
+    def while_market_open(self, cash = None, prices = None):
+        Algorithm.while_market_open(self, cash, prices)
 
         self.perform_buy_sell()
         pass
 
     # on_market_close:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called exactly when the market closes.
-    def on_market_close(self):
-        Algorithm.on_market_close(self)
+    def on_market_close(self, cash = None, prices = None):
+        Algorithm.on_market_close(self, cash, prices)
 
         self.perform_buy_sell()
 
@@ -227,7 +235,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
 
         Algorithm.log(self, "Good performers: " + str(good_performer_list))
 
-        user_cash = USER_CASH_PERCENTAGE * self.query.user_buying_power()
+        user_cash = USER_CASH_PERCENTAGE * self.cash
 
         # Determine quantity of each stock to buy
         # Add a third value to the good_performer tuple, which is the amount we're able to spend on that stock

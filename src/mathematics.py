@@ -72,7 +72,7 @@ class Math:
     @staticmethod
     def eval(poly, x):
         ev = np.polyval(poly, x)
-        if isinstance(ev, array):
+        if isinstance(ev, list):
             ev = 0
         return ev
 
@@ -98,7 +98,7 @@ class Math:
     # Returns the present value of the price, accounting for inflation.
     @staticmethod
     def get_discrete_future_value(price, years, rate = 0.025):
-        return Math.p_exp(Math.p_add(1, rate), -years))
+        return Math.p_exp(Math.p_add(1, rate), -years)
 
     # get_discrete_present_value:Float
     # param price:Float => Current asset price.

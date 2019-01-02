@@ -66,6 +66,13 @@ class Utility:
     def get_date_string(date):
         return date.strftime('%Y-%m-%d')
 
+    # get_timestamp_string:String
+    # param date:Float => Float timestamp to be converted into a string.
+    # returns The date as a formatted string YYYY-MM-dd.
+    @staticmethod
+    def get_timestamp_string(date_float):
+        return Utility.get_date_string(Utility.float_to_datetime(date_float))
+
     # now_timestamp:String
     # returns The timestamp for current time since epoch.
     @staticmethod
@@ -121,6 +128,18 @@ class Utility:
     @staticmethod
     def iso_to_datetime(dateString):
         return datetime.datetime(*map(int, re.split('[^\d]', dateString)[:-1]))
+
+    # datetime_to_float:Float
+    # param date_float:Float => datetime to convert into a float timestamp.
+    # returns A float timestamp for the datetime.
+    def datetime_to_float(date):
+        return date.timestamp()
+
+    # float_to_datetime:datetime
+    # param date_float:Float => Float to convert into datetime.
+    # returns A datetime represented by the float.
+    def float_to_datetime(date_float):
+        return datetime.datetime.fromtimestamp(date_float)
 
     # get_quote_quintuple:(time, open, close, high, low) (static)
     # param quoteDict:String => A single quote dictionary returned from get_history(...)['historicals'] in Query.

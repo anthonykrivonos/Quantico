@@ -24,12 +24,9 @@ class ShortIntensiveAlgorithm(Algorithm):
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
     # param
-    def __init__(self, query, portfolio, sec_interval = 900):
+    def __init__(self, query, portfolio, sec_interval = 900, test = False, cash = 0.00):
 
         # Initialize properties
-
-        # Set to True if buys and sells should not go through
-        self.debug = False
 
         # Range of prices for stock purchasing
         self.buy_range = (6.00, 40.00)
@@ -56,7 +53,7 @@ class ShortIntensiveAlgorithm(Algorithm):
         self.stock_delta_perc = {}
 
         # Call super.__init__
-        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Short Intensive", buy_range = self.buy_range, debug = self.debug)
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Short Intensive", buy_range = self.buy_range, test = test, cash = cash)
 
     # initialize:void
     # NOTE: Configures the algorithm to run indefinitely.
@@ -88,21 +85,27 @@ class ShortIntensiveAlgorithm(Algorithm):
     #
 
     # on_market_will_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called an hour before the market opens.
-    def on_market_will_open(self):
-        Algorithm.on_market_will_open(self)
+    def on_market_will_open(self, cash = None, prices = None):
+        Algorithm.on_market_will_open(self, cash, prices)
         pass
 
     # on_market_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called exactly when the market opens.
-    def on_market_open(self):
-        Algorithm.on_market_open(self)
+    def on_market_open(self, cash = None, prices = None):
+        Algorithm.on_market_open(self, cash, prices)
         pass
 
     # while_market_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called on an interval while market is open.
-    def while_market_open(self):
-        Algorithm.while_market_open(self)
+    def while_market_open(self, cash = None, prices = None):
+        Algorithm.while_market_open(self, cash, prices)
 
         self.update_stock_data()
         self.perform_buy_sell()
@@ -110,9 +113,11 @@ class ShortIntensiveAlgorithm(Algorithm):
         pass
 
     # on_market_close:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called exactly when the market closes.
-    def on_market_close(self):
-        Algorithm.on_market_close(self)
+    def on_market_close(self, cash = None, prices = None):
+        Algorithm.on_market_close(self, cash, prices)
 
         Algorithm.cancel_open_orders(self)
 
@@ -128,7 +133,7 @@ class ShortIntensiveAlgorithm(Algorithm):
         for symbol in self.stock_data:
 
             # Get current price of the stock
-            current_price = self.query.get_current_price(symbol)
+            current_price = self.price(symbol)
 
             # Append current price to list
             self.stock_data[symbol].append(Price(Utility.now_timestamp(), current_price, current_price, current_price, current_price))
@@ -170,11 +175,11 @@ class ShortIntensiveAlgorithm(Algorithm):
         for symbol in self.symbols:
 
             # Get stock's price
-            current_price = self.query.get_current_price(symbol)
+            current_price = self.price(symbol)
 
             if self.stock_delta_perc[symbol] >= self.threshold/2:
                 # Buy if it reaches above half the buy threshold
-                cash = self.query.user_buying_power()
+                cash = self.cash
                 spend_amount = min(cash, Math.p_mul(Math.p_mul(cash, self.stock_delta_perc[symbol]), 10))
                 stock_shares = self.portfolio.get_quote_from_portfolio(symbol).count or 0
                 stock_shares_to_buy = round(spend_amount/current_price)
@@ -193,4 +198,3 @@ class ShortIntensiveAlgorithm(Algorithm):
                     did_sell = Algorithm.sell(self, symbol, stock_shares, None, current_price)
 
         Algorithm.log(self, "Finished run of perform_buy_sell")
-
