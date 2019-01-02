@@ -66,3 +66,10 @@ class Emotion(Enum):
     POSITIVE = 1     # positive emotion
     NEUTRAL = 0      # neutral emotion
     NEGATIVE = -1    # negative emotion
+
+# Events for algorithms
+class Event(Enum):
+    ON_MARKET_WILL_OPEN = 0
+    ON_MARKET_OPEN = 1
+    WHILE_MARKET_OPEN = 2
+    ON_MARKET_CLOSE = 3

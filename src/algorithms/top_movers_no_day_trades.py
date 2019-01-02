@@ -30,12 +30,6 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
 
         self.perform_buy_sell()
 
-    # initialize:void
-    # NOTE: Configures the algorithm to run indefinitely.
-    def initialize(self):
-
-        Algorithm.initialize(self)
-
     #
     # Event Functions
     #
@@ -77,9 +71,6 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         Algorithm.on_market_close(self, cash, prices)
 
         self.perform_buy_sell()
-
-        self.initialize()
-
         pass
 
     #

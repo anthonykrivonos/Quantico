@@ -27,19 +27,21 @@ class Algorithm:
     def __init__(self, query, portfolio, sec_interval = 900, name = "Algorithm", buy_range = (0.00, sys.maxsize), test = False, cash = 0.00):
 
         # Initialize properties
-        self.name = name                      # String name of the algorithm
-        self.query = query                    # Query class for making API calls
-        self.portfolio = portfolio            # The portfolio to call the algorithm on
-        self.sec_interval = sec_interval      # Interval (in s) of event executions
-        self.buy_list = []                    # List of stocks bought in the past day
-        self.sell_list = []                   # List of stocks sold in the past day
-        self.buy_range = buy_range            # Range of prices for purchasing stocks
-        self.logs = []                        # List of logged output
-        self.prices = {}                      # Map of symbols to the current ask price of one share
-        self.cash = cash                      # Float buying power amount.
+        self.name = name                        # String name of the algorithm
+        self.query = query                      # Query class for making API calls
+        self.portfolio = portfolio              # The portfolio to call the algorithm on
+        self.sec_interval = sec_interval        # Interval (in s) of event executions
+        self.buy_list = []                      # List of stocks bought in the past day
+        self.sell_list = []                     # List of stocks sold in the past day
+        self.buy_range = buy_range              # Range of prices for purchasing stocks
+        self.logs = []                          # List of logged output
+        self.prices = {}                        # Map of symbols to the current ask price of one share
+        self.cash = cash                        # Float buying power amount.
+        self.timestamp = Utility.now_timestamp()# Updated timestamp the algorithm is running.
+        self.event = Event.ON_MARKET_WILL_OPEN  # Current even the algorithm is on
 
         # Backtesting properties
-        self.test = test                     # Set to True if backtesting
+        self.test = test                        # Set to True if backtesting
 
         # Initialize the algorithm
         self.initialize()
@@ -53,7 +55,7 @@ class Algorithm:
     def initialize(self):
         if self.test:
             # User is performing a backtest, don't schedule event functions
-            self.log("Initialized algorithm \'" + self.name + "\' for backtesting...")
+            self.log("Initialized algorithm \'" + self.name + "\' for backtesting...", 't')
             self.backtest()
         else:
             # User is live trading, schedule event functions
@@ -102,6 +104,8 @@ class Algorithm:
     def reset_for_next_day(self):
         self.buy_list = []
         self.sell_list = []
+        if not self.test:
+            self.timestamp = Utility.now_timestamp()
 
     #
     # Event Functions
@@ -113,6 +117,7 @@ class Algorithm:
     # NOTE: Called an hour before the market opens.
     def on_market_will_open(self, cash = None, prices = None):
         self.log("Market will open.")
+        self.event = Event.ON_MARKET_WILL_OPEN
         self.reset_for_next_day()
         self.update_cash(cash)
         self.update_prices(prices)
@@ -124,6 +129,7 @@ class Algorithm:
     # NOTE: Called exactly when the market opens.
     def on_market_open(self, cash = None, prices = None):
         self.log("Market just opened.")
+        self.event = Event.ON_MARKET_OPEN
         self.update_cash(cash)
         self.update_prices(prices)
         pass
@@ -134,6 +140,7 @@ class Algorithm:
     # NOTE: Called on an interval while market is open.
     def while_market_open(self, cash = None, prices = None):
         self.log("Market currently open.")
+        self.event = Event.WHILE_MARKET_OPEN
         self.update_cash(cash)
         self.update_prices(prices)
         pass
@@ -144,6 +151,7 @@ class Algorithm:
     # NOTE: Called exactly when the market closes.
     def on_market_close(self, cash = None, prices = None):
         self.log("Market has closed.")
+        self.event = Event.ON_MARKET_CLOSE
         self.update_cash(cash)
         self.update_prices(prices)
         pass
@@ -168,9 +176,12 @@ class Algorithm:
     # param type:String => The string representation of the type of message this is.
     # NOTE: Logs the output and adds it to the list of logs.
     def log(self, message, type = 'log'):
+        type = type.lower()
         if not isinstance(message, str):
             message = str(message)
-        if type == 'error' or type == 'w' or type == 'err':
+        if self.test and (type != "t" and type != "test"):
+            self.logs.append("Backtest: " + message)
+        elif type == 'error' or type == 'w' or type == 'err':
             self.logs.append(Utility.error(message))
         elif type == 'warning' or type == 'w' or type == 'warn':
             self.logs.append(Utility.warning(message))
@@ -188,12 +199,29 @@ class Algorithm:
     # Backtesting and Live Value Functions
     #
 
+    # value:Float
+    # Returns the value of the portfolio.
+    def value(self):
+        value = 0.00
+        for quote in self.portfolio.get_quotes():
+            value += (self.price(quote.symbol) * quote.count)
+        return value
+
     # price:Void
     # param symbol:String => Symbol.
     # Returns the current price of the given symbol.
     def price(self, symbol):
         if symbol in self.prices:
             return self.prices[symbol]
+        elif self.test and self.timestamp in self.portfolio.get_symbol_history_map(symbol):
+            price = self.portfolio.get_symbol_history_map(symbol)[self.timestamp]
+            if self.event == Event.WHILE_MARKET_OPEN:
+                return price.low
+            elif self.event == Event.ON_MARKET_CLOSE:
+                return price.close
+            else:
+                return price.open
+            return
         return self.query.get_current_price(symbol)
 
     # update_prices:Void
@@ -231,28 +259,36 @@ class Algorithm:
 
         # Assure enough historicals data will be processed
         if len(historical_times) == 0:
-            self.log("Not enough data for a backtest.", 'error')
+            self.log("Not enough data for a backtest.", 'error', 't')
             return
 
         # Assure enough cash is allocated
         if self.cash == 0.00:
-            self.log("Not enough starting cash for backtest.", 'error')
+            self.log("Not enough starting cash for backtest.", 'error', 't')
             return
 
-        self.log("Starting backtest from " + Utility.get_timestamp_string(historical_times[0]) + " to " + Utility.get_timestamp_string(historical_times[-1]))
-
+        previous_value = self.value()
+        self.cash += previous_value
         start_cash = self.cash
-        current_cash = self.cash
+
+        self.log("Starting backtest from " + Utility.get_timestamp_string(historical_times[0]) + " to " + Utility.get_timestamp_string(historical_times[-1]) + " with $" + str(start_cash), 't')
 
         # Run through timeline
         for time in historical_times:
+
+            self.timestamp = time
+
+            self.cash -= previous_value
+            previous_value = self.value()
+            self.cash += previous_value
+
             # Announce progress
-            percentage = (current_cash - start_cash) / start_cash * 100
-            difference = current_cash - start_cash
+            percentage = (self.cash - start_cash) / start_cash * 100
+            difference = self.cash - start_cash
             if percentage >= 0.00:
-                self.log(Utility.get_timestamp_string(time) + " (backtest): cash($" + str(current_cash) + "), gain(" + str(abs(percentage)) + "%, $" + str(abs(difference)) + ")")
+                self.log(Utility.get_timestamp_string(time) + " (backtest): cash($" + str(self.cash) + "), gain(" + str(abs(percentage)) + "%, $" + str(abs(difference)) + ")", 't')
             else:
-                self.log(Utility.get_timestamp_string(time) + " (backtest): cash($" + str(current_cash) + "), loss(" + str(abs(percentage)) + "%, $" + str(abs(difference)) + ")")
+                self.log(Utility.get_timestamp_string(time) + " (backtest): cash($" + str(self.cash) + "), loss(" + str(abs(percentage)) + "%, $" + str(abs(difference)) + ")", 't')
 
             # Store five maps of symbols to instantaneous prices
             on_market_will_open_prices = {}
@@ -269,21 +305,21 @@ class Algorithm:
                 on_market_close_prices[symbol] = price.close
 
             # Execute events with appropriate prices
-            self.on_market_will_open(current_cash, on_market_will_open_prices)
-            self.on_market_open(current_cash, on_market_open_prices)
-            self.while_market_open(current_cash, while_market_open_low_prices)
-            self.while_market_open(current_cash, while_market_open_high_prices)
-            self.on_market_close(current_cash, on_market_close_prices)
+            self.on_market_will_open(self.cash, on_market_will_open_prices)
+            self.on_market_open(self.cash, on_market_open_prices)
+            self.while_market_open(self.cash, while_market_open_low_prices)
+            self.while_market_open(self.cash, while_market_open_high_prices)
+            self.on_market_close(self.cash, on_market_close_prices)
 
-        end_cash = current_cash
+        end_cash = self.cash
 
         # Announce final progress
         final_percentage = (end_cash - start_cash) / start_cash * 100
         final_difference = end_cash - start_cash
         if final_percentage >= 0.00:
-            self.log("Final results (backtest): cash($" + str(end_cash) + "), gain(" + str(abs(final_percentage)) + "%, $" + str(abs(final_difference)) + ")")
+            self.log("Final results (backtest): cash($" + str(end_cash) + "), gain(" + str(abs(final_percentage)) + "%, $" + str(abs(final_difference)) + ")", 't')
         else:
-            self.log("Final results (backtest): cash($" + str(end_cash) + "), loss(" + str(abs(final_percentage)) + "%, $" + str(abs(final_difference)) + ")")
+            self.log("Final results (backtest): cash($" + str(end_cash) + "), loss(" + str(abs(final_percentage)) + "%, $" + str(abs(final_difference)) + ")", 't')
         pass
 
     #
@@ -299,7 +335,7 @@ class Algorithm:
     def buy(self, symbol, quantity, stop = None, limit = None):
         try:
             price = limit if not None else stop
-            if price <= self.buy_range[1] and price >= self.buy_range[0] and symbol not in self.sell_list:
+            if price <= self.cash and price <= self.buy_range[1] and price >= self.buy_range[0] and symbol not in self.sell_list:
                 if not self.test:
                     self.query.exec_buy(symbol, quantity, stop, limit)
                     self.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
@@ -311,11 +347,11 @@ class Algorithm:
                 return True
             else:
                 if price > self.buy_range[1]:
-                    Utility.error("Could not buy " + symbol + ": Stock too expensive")
+                    self.log("Could not buy " + symbol + ": Stock too expensive", 'error')
                 elif price < self.buy_range[0]:
-                    Utility.error("Could not buy " + symbol + ": Stock too cheap")
+                    self.log("Could not buy " + symbol + ": Stock too cheap", 'error')
                 elif symbol in self.sell_list:
-                    Utility.error("Could not buy " + symbol + ": Stock already sold today")
+                    self.log("Could not buy " + symbol + ": Stock already sold today", 'error')
         except Exception as e:
             Utility.error("Could not buy " + symbol + ": " + str(e))
         return False

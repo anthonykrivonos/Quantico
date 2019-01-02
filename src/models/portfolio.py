@@ -217,8 +217,22 @@ class Portfolio:
     # returns List of Price models with the time, volume, open, close, high, low for each time in the interval.
     def get_symbol_history(self, symbol, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
         historicals = self.__query.get_history(symbol, interval, span, bounds)['historicals']
-        historicals = list(map(lambda h: Price(mpl.dates.date2num(Utility.iso_to_datetime(h['begins_at'])), float(h['open_price']), float(h['close_price']), float(h['high_price']), float(h['low_price'])), historicals))
+        historicals = list(map(lambda h: Price(Utility.datetime_to_float(Utility.iso_to_datetime(h['begins_at'])), float(h['open_price']), float(h['close_price']), float(h['high_price']), float(h['low_price'])), historicals))
         return historicals
+
+    # get_symbol_history_map:[Float:Price]
+    # param symbol:String => String symbol of the instrument.
+    # param interval:Span => Time in between each value. (default: DAY)
+    # param span:Span => Range for the data to be returned. (default: YEAR)
+    # param bounds:Span => The bounds to be included. (default: REGULAR)
+    # returns Map of float timestamps to prices for the given symbol.
+    def get_symbol_history_map(self, symbol, interval = Span.DAY, span = Span.YEAR, bounds = Bounds.REGULAR):
+        historicals = self.__query.get_history(symbol, interval, span, bounds)['historicals']
+        historicals = list(map(lambda h: Price(Utility.datetime_to_float(Utility.iso_to_datetime(h['begins_at'])), float(h['open_price']), float(h['close_price']), float(h['high_price']), float(h['low_price'])), historicals))
+        history = {}
+        for price in historicals:
+            history[price.time] = price
+        return history
 
     # get_portfolio_history:[Price]
     # param symbol:String => String symbol of the instrument.

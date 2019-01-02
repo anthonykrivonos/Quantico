@@ -36,7 +36,7 @@ class Utility:
     @staticmethod
     def log(message):
         output = str(Utility.now_datetime64()) + "L: " + message
-        print(colored(output, 'white'))
+        print(colored(output, 'blue'))
         return output
 
     # error:Void
@@ -77,7 +77,7 @@ class Utility:
     # returns The timestamp for current time since epoch.
     @staticmethod
     def now_timestamp():
-        return time()
+        return Utility.now_datetime().timestamp()
 
     # now_datetime:datetime
     # returns The current date as a datetime.
