@@ -39,10 +39,16 @@ class Query:
         all_symbols = []
         if tags is not None and tags is not []:
             if isinstance(tags, Enum):
-                all_symbols = self.get_by_tag(tag)
+                try:
+                    all_symbols = self.get_by_tag(tag)
+                except Exception as e:
+                    pass
             else:
                 for tag in tags:
-                    all_symbols += self.get_by_tag(tag)
+                    try:
+                        all_symbols += self.get_by_tag(tag)
+                    except Exception as e:
+                        pass
         else:
             all_symbols = [ instrument['symbol'] for instrument in self.trader.instruments_all() ]
         queried_fundamentals = []
@@ -149,12 +155,19 @@ class Query:
     # returns Portfolio model for the logged in user.
     def user_portfolio(self):
         quotes = []
-        user_portfolio = self.trader.stock_portfolio()
+        user_portfolio = self.user_stock_portfolio()
         for data in user_portfolio:
             symbol = data['symbol']
             count = float(data['quantity'])
             quotes.append(Quote(symbol, count))
         return Portfolio(self, quotes, 'User Portfolio')
+
+    # user_stock_portfolio:[String:String]
+    # TODO: Better documentation.
+    # returns Stock perfolio for the user.
+    def user_stock_portfolio(self):
+        positions = self.trader.positions()['results'] or []
+        return list(map(lambda position: Utility.merge_dicts(position, self.trader.session.get(position['instrument'], timeout=15).json()), positions))
 
     # user_portfolio:[String:String]
     # returns Positions for the logged in user.

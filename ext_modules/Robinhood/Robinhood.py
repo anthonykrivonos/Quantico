@@ -17,11 +17,8 @@ import six
 import dateutil
 
 #Application-specific imports
-from Robinhood import exceptions as RH_exception
-from Robinhood import endpoints
-
-# Quantico imports
-from utility import *
+from . import exceptions as RH_exception
+from . import endpoints
 
 class Bounds(Enum):
     """Enum for bounds in `historicals` endpoint """
@@ -169,19 +166,8 @@ class Robinhood:
         res.raise_for_status()  # will throw without auth
         data = res.json()
 
-        return
+        return data
 
-    def instruments_all(self):
-        """Fetch all instruments endpoint
-
-            Returns:
-                (:obj:`dict`): JSON contents from `instruments` endpoint
-        """
-        res = self.session.get(endpoints.instruments(), timeout=15)
-        res.raise_for_status()
-        res = res.json()
-
-        return res['results']
 
     def instruments(self, stock):
         """Fetch instruments endpoint
@@ -224,8 +210,6 @@ class Robinhood:
 
         return data['results']
 
-    def stock_from_instrument_url(self, url):
-        return self.session.get(url, timeout=15).json()
 
     def quote_data(self, stock=''):
         """Fetch stock quote
@@ -246,7 +230,7 @@ class Robinhood:
 
         #Check for validity of symbol
         try:
-            req = requests.get(url, timeout=15)
+            req = self.session.get(url, timeout=15)
             req.raise_for_status()
             data = req.json()
         except requests.exceptions.HTTPError:
@@ -271,7 +255,7 @@ class Robinhood:
         url = str(endpoints.quotes()) + "?symbols=" + ",".join(stocks)
 
         try:
-            req = requests.get(url, timeout=15)
+            req = self.session.get(url, timeout=15)
             req.raise_for_status()
             data = req.json()
         except requests.exceptions.HTTPError:
@@ -636,11 +620,23 @@ class Robinhood:
             Returns:
                 (List): a list of Ticker strings
         """
-        res = self.get_url(endpoints.tags(tag))
-        if 'instruments' in res:
-            instrument_list = res['instruments']
-            return [ self.get_url(instrument)["symbol"] for instrument in instrument_list ]
-        return res
+        instrument_list = self.get_url(endpoints.tags(tag))["instruments"]
+        return [self.get_url(instrument)["symbol"] for instrument in instrument_list]
+
+    @login_required
+    def get_transfers(self):
+        """Returns a page of list of transfers made to/from the Bank.
+
+        Note that this is a paginated response. The consumer will have to look
+        at 'next' key in the JSON and make a subsequent request for the next
+        page.
+
+            Returns:
+                (list): List of all transfers to/from the bank.
+        """
+        res = self.session.get(endpoints.ach('transfers'), timeout=15)
+        res.raise_for_status()
+        return res.json()
 
     ###########################################################################
     #                           GET OPTIONS INFO
@@ -700,7 +696,7 @@ class Robinhood:
 
         #Check for validity of symbol
         try:
-            req = requests.get(url, timeout=15)
+            req = self.session.get(url, timeout=15)
             req.raise_for_status()
             data = req.json()
         except requests.exceptions.HTTPError:
@@ -708,6 +704,7 @@ class Robinhood:
 
 
         return data
+
 
     def fundamentals(self, stock=''):
         """Wrapper for get_fundamentlals function """
@@ -718,10 +715,6 @@ class Robinhood:
     ###########################################################################
     #                           PORTFOLIOS DATA
     ###########################################################################
-
-    def stock_portfolio(self):
-        positions = self.positions()['results'] or []
-        return list(map(lambda position: Utility.merge_dicts(position, self.session.get(position['instrument'], timeout=15).json()), positions))
 
     def portfolios(self):
         """Returns the user's portfolio data """
@@ -1277,11 +1270,12 @@ class Robinhood:
         if(instrument_URL is None):
             if(symbol is None):
                 raise(ValueError('Neither instrument_URL nor symbol were passed to submit_order'))
-            instruments_LIST = self.instruments(symbol)
-            if len(instruments_LIST) > 0:
-                instrument_URL = self.instruments(symbol)[0]['url']
-            else:
-                raise(ValueError('The instrument likely does not exist'))
+            for result in self.instruments(symbol):
+                if result['symbol'].upper() == symbol.upper() :
+                    instrument_URL = result['url']
+                    break
+            if(instrument_URL is None):
+                raise(ValueError('instrument_URL could not be defined. Symbol %s not found' % symbol))
 
         if(symbol is None):
             symbol = self.session.get(instrument_URL, timeout=15).json()['symbol']
@@ -1314,7 +1308,7 @@ class Robinhood:
         if(trigger == 'stop'):
             if(stop_price is None):
                 raise(ValueError('Stop order has no stop_price in call to submit_order'))
-            if(price <= 0):
+            if(stop_price <= 0):
                 raise(ValueError('Stop_price must be positive number in call to submit_order'))
 
         if(stop_price is not None):
@@ -1356,6 +1350,8 @@ class Robinhood:
             ]:
             if(value is not None):
                 payload[field] = value
+
+        print(payload)
 
         res = self.session.post(endpoints.orders(), data=payload, timeout=15)
         res.raise_for_status()
