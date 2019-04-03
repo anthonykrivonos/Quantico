@@ -23,11 +23,58 @@ class Query:
     def __init__(self, email, password):
         self.trader = Robinhood()
         self.trader.login(username=email, password=password)
+        self.email = email
+        self.password = password
 
 
     ##           ##
     #   Getters   #
     ##           ##
+
+
+    # get_fundamentals_by_criteria:[String]
+    # param price_range:(float, float) => High and low prices for the queried fundamentals.
+    # returns List of symbols that fit the given criteria.
+    def get_fundamentals_by_criteria(self, price_range = (0.00, sys.maxsize), tags = None):
+        all_symbols = []
+        if tags is not None and tags is not []:
+            if isinstance(tags, Enum):
+                try:
+                    all_symbols = self.get_by_tag(tag)
+                except Exception as e:
+                    pass
+            else:
+                for tag in tags:
+                    try:
+                        all_symbols += self.get_by_tag(tag)
+                    except Exception as e:
+                        pass
+        else:
+            all_symbols = [ instrument['symbol'] for instrument in self.trader.instruments_all() ]
+        queried_fundamentals = []
+        for symbol in all_symbols:
+            try:
+                fundamentals = self.get_fundamentals(symbol)
+                if fundamentals is not None and 'low' in fundamentals and 'high' in fundamentals and float(fundamentals['low'] or -1) >= price_range[0] and float(fundamentals['high'] or sys.maxsize + 1) <= price_range[1]:
+                    fundamentals['symbol'] = symbol
+                    queried_fundamentals.append(fundamentals)
+            except Exception as e:
+                continue
+        return queried_fundamentals
+
+    # get_symbols_by_criteria:[String]
+    # param price_range:(float, float) => High and low prices for the queried symbols.
+    # returns List of symbols that fit the given criteria.
+    def get_symbols_by_criteria(self, price_range = (0.00, sys.maxsize), tags = None):
+        queried_fundamentals = self.get_fundamentals_by_criteria(price_range, tags)
+        queried_symbols = [ fundamentals['symbol'] for fundamentals in queried_fundamentals ]
+        return queried_symbols
+
+    # get_current_price:[String:String]
+    # param symbol:String => String symbol of the instrument to return.
+    # returns Float value of the current price of the stock with the given symbol.
+    def get_current_price(self, symbol):
+        return float(self.trader.quote_data(symbol)['last_trade_price'])
 
     # get_quote:[String:String]
     # param symbol:String => String symbol of the instrument to return.
@@ -40,7 +87,6 @@ class Query:
     # returns Quote data for the instruments with the given symbols.
     def get_quotes(self, symbols):
         return self.trader.quotes_data(symbols)
-
 
     # get_instrument:[String:String]
     # param symbol:String => String symbol of the instrument.
@@ -109,12 +155,19 @@ class Query:
     # returns Portfolio model for the logged in user.
     def user_portfolio(self):
         quotes = []
-        user_portfolio = self.trader.stock_portfolio()
+        user_portfolio = self.user_stock_portfolio()
         for data in user_portfolio:
             symbol = data['symbol']
             count = float(data['quantity'])
             quotes.append(Quote(symbol, count))
         return Portfolio(self, quotes, 'User Portfolio')
+
+    # user_stock_portfolio:[String:String]
+    # TODO: Better documentation.
+    # returns Stock perfolio for the user.
+    def user_stock_portfolio(self):
+        positions = self.trader.positions()['results'] or []
+        return list(map(lambda position: Utility.merge_dicts(position, self.trader.session.get(position['instrument'], timeout=15).json()), positions))
 
     # user_portfolio:[String:String]
     # returns Positions for the logged in user.
@@ -187,6 +240,16 @@ class Query:
     def user_orders(self):
         return self.trader.order_history(None)
 
+    # user_open_orders:[[String:String]]
+    # returns The open orders for the user
+    def user_open_orders(self):
+        orders = self.trader.order_history(None)['results']
+        open_orders = []
+        for order in orders:
+            if order['state'] == 'queued':
+                open_orders.append(order)
+        return open_orders
+
     # user_account:[[String:String]]
     # returns The user's account.
     def user_account(self):
@@ -241,4 +304,16 @@ class Query:
     # param order_id:String => ID of the order to cancel.
     # returns The canceled order response.
     def exec_cancel(self, order_id):
-        return query.trader.cancel_order(order_id)
+        return self.trader.cancel_order(order_id)
+
+    # exec_cancel_open_orders:[String]
+    # returns A list of string IDs for the cancelled orders.
+    def exec_cancel_open_orders(self):
+        orders = self.trader.order_history(None)['results']
+        cancelled_order_ids = []
+        for order in orders:
+            if order['state'] == 'queued':
+                self.trader.cancel_order(order['id'])
+                cancelled_order_ids.append(order['id'])
+        return cancelled_order_ids
+

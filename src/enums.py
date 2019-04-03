@@ -44,6 +44,14 @@ class Tag(Enum):
     FINANCE = "finance"
     CAP_WEIGHTED = "cap-weighted"
     INVESTMENT_OR_TRUST = "investment-trust-or-fund"
+    HEALTHCARE = "healthcare"
+    PHARMACEUTICAL = "pharmaceutical"
+    MEDICAL = "medical"
+    HEALTH = "health"
+    MEDICAL_DEVICES = "medical-devices"
+    MANUFACTURING = "manufacturing"
+    TECHNOLOGY = "technology"
+    US = "us"
 
 # Quintuple Index
 class Quintuple(Enum):
@@ -52,3 +60,16 @@ class Quintuple(Enum):
     CLOSE = 2
     HIGH = 3
     LOW = 4
+
+# Bounds Enum
+class Emotion(Enum):
+    POSITIVE = 1     # positive emotion
+    NEUTRAL = 0      # neutral emotion
+    NEGATIVE = -1    # negative emotion
+
+# Events for algorithms
+class Event(Enum):
+    ON_MARKET_WILL_OPEN = 0
+    ON_MARKET_OPEN = 1
+    WHILE_MARKET_OPEN = 2
+    ON_MARKET_CLOSE = 3
