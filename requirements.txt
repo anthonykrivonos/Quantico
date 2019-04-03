@@ -1,0 +1,8 @@
+python-dotenv
+termcolor
+textblob
+pandas
+pandas_market_calendars
+mpl_finance
+pyquery
+sympy
