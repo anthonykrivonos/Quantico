@@ -1,6 +1,6 @@
 # Anthony Krivonos
 # Oct 29, 2018
-# src/alg/nodaytrades.py
+# src/algorithms/top_movers_no_day_trades.py
 
 # Global Imports
 import numpy as np
@@ -10,81 +10,65 @@ import math
 from utility import *
 from enums import *
 from mathematics import *
-from algorithm import Algorithm
 
-# Abstract: Algorithm employing the no-day-trades tactic.
+from algorithms.__algorithm import *
+
+# Abstract: Algorithm employing a top movers tactic.
 
 class TopMoversNoDayTradesAlgorithm(Algorithm):
 
     # __init__:Void
     # param query:Query => Query object for API access.
     # param sec_interval:Integer => Time interval in seconds for event handling.
-    def __init__(self, query, portfolio, sec_interval = 900):
+    def __init__(self, query, portfolio, sec_interval = 900, test = False, cash = 0.00):
+
+        # Initialize properties
+        self.buy_range = (0.00, 5.00)
 
         # Call super.__init__
-        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Top Movers, No Day Trades")
-
-        # Properties
-        self.buy_list = []          # List of stocks bought in the current day
-        self.sell_list = []         # List of stocks sold in the current day
-        self.price_limit = 5.00     # Dollar limit for the maximum price of stocks to buy
-        self.buys_allowed = 2000    # Number of buys allowed per day
-        self.sells_allowed = 2000   # Number of sells allowed per day
+        Algorithm.__init__(self, query, portfolio, sec_interval, name = "Top Movers, No Day Trades", buy_range = self.buy_range, test = test, cash = cash)
 
         self.perform_buy_sell()
-
-    # initialize:void
-    # NOTE: Configures the algorithm to run indefinitely.
-    def initialize(self):
-
-        Algorithm.initialize(self)
-
-        # Refresh buy and sell lists
-        self.buy_list = []
-        self.sell_list = []
-
-        # Update buy list and sell list with today's orders
-        todays_orders = self.query.user_orders()['results'] or []
-        todays_buys = []
-        todays_sells = []
-        for order in todays_orders:
-            if order['side'] == Side.BUY.value:
-                todays_buys.append(order)
-            else:
-                todays_sells.append(order)
-        todays_buys = [ self.query.stock_from_instrument_url(order['instrument'])['symbol'] for order in todays_buys if Utility.iso_to_datetime(order['last_transaction_at']).date() == datetime.datetime.now().date() ]
-        todays_sells = [ self.query.stock_from_instrument_url(order['instrument'])['symbol'] for order in todays_sells if Utility.iso_to_datetime(order['last_transaction_at']).date() == datetime.datetime.now().date() ]
-        self.buy_list = todays_buys
-        self.sell_list = todays_sells
-
-        Utility.log('Today Bought: ' + str(self.buy_list))
-        Utility.log('Today Sold  : ' + str(self.sell_list))
 
     #
     # Event Functions
     #
 
 
-    # market_will_open:Void
+    # on_market_will_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called an hour before the market opens.
-    def market_will_open(self):
-        Algorithm.market_will_open(self)
+    def on_market_will_open(self, cash = None, prices = None):
+        Algorithm.on_market_will_open(self, cash, prices)
 
         self.perform_buy_sell()
         pass
 
     # on_market_open:Void
-    # NOTE: Called exactly when the market opens. Cannot include a buy or sell.
-    def on_market_open(self):
-        Algorithm.on_market_open(self)
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
+    # NOTE: Called exactly when the market opens.
+    def on_market_open(self, cash = None, prices = None):
+        Algorithm.on_market_open(self, cash, prices)
+        pass
+
+    # while_market_open:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
+    # NOTE: Called on an interval while market is open.
+    def while_market_open(self, cash = None, prices = None):
+        Algorithm.while_market_open(self, cash, prices)
 
         self.perform_buy_sell()
         pass
 
     # on_market_close:Void
+    # param cash:Float => User's buying power.
+    # param prices:{String:Float}? => Map of symbols to ask prices.
     # NOTE: Called exactly when the market closes.
-    def on_market_close(self):
-        Algorithm.on_market_close(self)
+    def on_market_close(self, cash = None, prices = None):
+        Algorithm.on_market_close(self, cash, prices)
 
         self.perform_buy_sell()
         pass
@@ -103,7 +87,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
     #   - Buy top 1/3 of performers by ratio
     def perform_buy_sell(self):
 
-        Utility.log("Executing perform_buy_sell:")
+        Algorithm.log(self, "Executing perform_buy_sell:")
 
         # The percentage of the user's total equity to use for this algorithm
         USER_CASH_PERCENTAGE = 0.6
@@ -113,10 +97,10 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         ROUND_2_WEIGHT = 1.7
         ROUND_3_WEIGHT = 1.3
 
-        Utility.log("Cash percentage: " + str(USER_CASH_PERCENTAGE))
-        Utility.log("Round 1 weight: " + str(ROUND_1_WEIGHT))
-        Utility.log("Round 2 weight: " + str(ROUND_2_WEIGHT))
-        Utility.log("Round 3 weight: " + str(ROUND_3_WEIGHT))
+        Algorithm.log(self, "Cash percentage: " + str(USER_CASH_PERCENTAGE))
+        Algorithm.log(self, "Round 1 weight: " + str(ROUND_1_WEIGHT))
+        Algorithm.log(self, "Round 2 weight: " + str(ROUND_2_WEIGHT))
+        Algorithm.log(self, "Round 3 weight: " + str(ROUND_3_WEIGHT))
 
         symbols_to_analyze = []
         symbol_quantity_map = {}
@@ -124,6 +108,11 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         for quote in self.portfolio.get_quotes():
             symbols_to_analyze.append(quote.symbol)
             symbol_quantity_map[quote.symbol] = quote.count
+
+        for symbol in self.query.get_by_tag(Tag.TOP_MOVERS):
+            if symbol not in symbol_quantity_map:
+                symbols_to_analyze.append(symbol)
+                symbol_quantity_map[symbol] = 0
 
         # Store symbol count
         symbol_count = len(symbols_to_analyze)
@@ -217,7 +206,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         bad_performer_count = round(symbol_count * 2 / 3)
         bad_performer_list = symbol_propensity_list[-1 * bad_performer_count:symbol_count]
 
-        Utility.log("Bad performers: " + str(bad_performer_list))
+        Algorithm.log(self, "Bad performers: " + str(bad_performer_list))
 
         # Sell each poor performer
         for pair in bad_performer_list:
@@ -225,7 +214,7 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
             quantity = symbol_quantity_map[symbol]
             limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
             if quantity > 0.0:
-                did_sell = self.safe_sell(symbol, quantity, limit=limit)
+                did_sell = Algorithm.sell(self, symbol, quantity, limit=limit)
 
         #
         # Second Execution - Buy top 1/4 performers
@@ -235,9 +224,9 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
         good_performer_count = symbol_count - bad_performer_count
         good_performer_list = symbol_propensity_list[0:good_performer_count]
 
-        Utility.log("Good performers: " + str(good_performer_list))
+        Algorithm.log(self, "Good performers: " + str(good_performer_list))
 
-        user_cash = USER_CASH_PERCENTAGE * self.query.user_buying_power()
+        user_cash = USER_CASH_PERCENTAGE * self.cash
 
         # Determine quantity of each stock to buy
         # Add a third value to the good_performer tuple, which is the amount we're able to spend on that stock
@@ -255,87 +244,6 @@ class TopMoversNoDayTradesAlgorithm(Algorithm):
             quantity = round(triple[2] / symbol_quintuple_map[symbol][-1][Quintuple.HIGH.value])
             limit = symbol_quintuple_map[symbol][-1][Quintuple.LOW.value]
             if quantity > 0.0:
-                did_buy = self.safe_buy(symbol, quantity, limit=limit)
+                did_buy = Algorithm.buy(self, symbol, quantity, limit=limit)
 
-        Utility.log("Finished run of perform_buy_sell")
-
-
-    #
-    # Execution Functions
-    #
-
-    # safe_buy:Void
-    # param symbol:String => String symbol of the instrument.
-    # param quantity:Number => Number of shares to execute buy for.
-    # param stop:Number? => Sets a stop price on the buy, if not None.
-    # param limit:Number? => Sets a limit price on the buy, if not None.
-    # NOTE: Safely executes a buy order outside of open hours, if possible.
-    def safe_buy(self, symbol, quantity, stop = None, limit = None):
-        now = Utility.now_datetime64()
-        try:
-            if len(self.buy_list) < self.buys_allowed and symbol not in self.buy_list and symbol not in self.sell_list:
-                self.query.exec_buy(symbol, quantity, stop, limit)
-                self.buy_list.append(symbol)
-                Utility.log("Bought " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
-                return True
-            else:
-                if len(self.buy_list) == self.buys_allowed:
-                    Utility.error("Could not buy " + symbol + ": Ran out of buys allowed")
-                elif now >= self.open_hour and now <= self.close_hour:
-                    Utility.error("Could not buy " + symbol + ": Inside market hours")
-                elif symbol in self.buy_list:
-                    Utility.error("Could not buy " + symbol + ": Stock already bought today")
-                elif symbol in self.sell_list:
-                    Utility.error("Could not buy " + symbol + ": Stock already sold today")
-        except Exception as e:
-            Utility.error("Could not buy " + symbol + ": " + str(e))
-        return False
-
-
-    # safe_sell:Boolean
-    # param symbol:String => String symbol of the instrument.
-    # param quantity:Number => Number of shares to execute sell for.
-    # param stop:Number? => Sets a stop price on the sell, if not None.
-    # param limit:Number? => Sets a limit price on the sell, if not None.
-    # NOTE: Safely executes a sell order outside of open hours, if possible.
-    def safe_sell(self, symbol, quantity, stop = None, limit = None):
-        now = Utility.now_datetime64()
-        try:
-            if len(self.sell_list) < self.sells_allowed and symbol not in self.sell_list and symbol not in self.buy_list:
-                self.query.exec_sell(symbol, quantity, stop, limit)
-                self.sell_list.append(symbol)
-                Utility.log("Sold " + str(quantity) + " shares of " + symbol + " with limit " + str(limit) + " and stop " + str(stop))
-                return True
-            else:
-                if len(self.sell_list) < self.sells_allowed:
-                    Utility.error("Could not sell " + symbol + ": Ran out of sells allowed")
-                elif now >= self.open_hour and now <= self.close_hour:
-                    Utility.error("Could not sell " + symbol + ": Inside market hours")
-                elif symbol in self.sell_list:
-                    Utility.error("Could not sell " + symbol + ": Stock already sold today")
-                elif symbol in self.buy_list:
-                    Utility.error("Could not sell " + symbol + ": Stock already bought today")
-        except Exception as e:
-            Utility.error("Could not sell " + symbol + ": " + str(e))
-        return False
-
-
-    # safe_cancel:Void
-    # param order_id:String => ID of the order to cancel.
-    # NOTE: Safely cancels an order given its ID, if possible.
-    def safe_cancel(self, order_id):
-        now = Utility.now_datetime64()
-        try:
-            if self.cancels_allowed > 0:
-                self.query.exec_cancel(order_id)
-                self.cancels_allowed -= 1
-                Utility.log("Cancelled order " + order_id)
-                return True
-            else:
-                if self.cancels_allowed == 0:
-                    Utility.log("Could not cancel order " + order_id + ": Ran out of cancels allowed")
-                elif now >= self.open_hour and now <= self.close_hour:
-                    Utility.log("Could not cancel order " + order_id + ": Inside market hours")
-        except:
-            Utility.log("Could not cancel " + symbol + ": A client error occurred")
-        return False
+        Algorithm.log(self, "Finished run of perform_buy_sell")

@@ -5,7 +5,7 @@
 # Imports
 import sys
 import re, datetime
-from time import sleep
+from time import sleep, time
 import threading
 from termcolor import colored
 import random
@@ -32,23 +32,32 @@ class Utility:
     # log:Void
     # param message:String => Message to log.
     # NOTE: Prints a log message with time.
+    # returns The output string.
     @staticmethod
     def log(message):
-        print(colored(str(Utility.now_datetime64()) + "L: " + message, 'white'))
+        output = str(Utility.now_datetime64()) + "L: " + message
+        print(colored(output, 'blue'))
+        return output
 
     # error:Void
     # param message:String => Message to log as an error.
     # NOTE: Prints an error message with time.
+    # returns The output string.
     @staticmethod
     def error(message):
-        print(colored(str(Utility.now_datetime64()) + "E: " + message, 'red'))
+        output = str(Utility.now_datetime64()) + "E: " + message
+        print(colored(output, 'red'))
+        return output
 
     # warning:Void
     # param message:String => Message to log as a warning.
     # NOTE: Prints a warning message with time.
+    # returns The output string.
     @staticmethod
     def warning(message):
-        print(colored(str(Utility.now_datetime64()) + "W: " + message, 'yellow'))
+        output = str(Utility.now_datetime64()) + "W: " + message
+        print(colored(output, 'yellow'))
+        return output
 
     # get_date_string:String
     # param date:datetime => Date to be converted into a string.
@@ -57,11 +66,30 @@ class Utility:
     def get_date_string(date):
         return date.strftime('%Y-%m-%d')
 
+    # get_timestamp_string:String
+    # param date:Float => Float timestamp to be converted into a string.
+    # returns The date as a formatted string YYYY-MM-dd.
+    @staticmethod
+    def get_timestamp_string(date_float):
+        return Utility.get_date_string(Utility.float_to_datetime(date_float))
+
+    # now_timestamp:String
+    # returns The timestamp for current time since epoch.
+    @staticmethod
+    def now_timestamp():
+        return Utility.now_datetime().timestamp()
+
+    # now_datetime:datetime
+    # returns The current date as a datetime.
+    @staticmethod
+    def now_datetime():
+        return datetime.datetime.now()
+
     # now_datetime64:datetime64
     # returns The current date as a datetime64.
     @staticmethod
     def now_datetime64():
-        return np.datetime64(datetime.datetime.now())
+        return np.datetime64(Utility.now_datetime())
 
     # today_date_string:String
     # returns The current date as a formatted string YYYY-MM-dd.
@@ -101,6 +129,18 @@ class Utility:
     def iso_to_datetime(dateString):
         return datetime.datetime(*map(int, re.split('[^\d]', dateString)[:-1]))
 
+    # datetime_to_float:Float
+    # param date_float:Float => datetime to convert into a float timestamp.
+    # returns A float timestamp for the datetime.
+    def datetime_to_float(date):
+        return date.timestamp()
+
+    # float_to_datetime:datetime
+    # param date_float:Float => Float to convert into datetime.
+    # returns A datetime represented by the float.
+    def float_to_datetime(date_float):
+        return datetime.datetime.fromtimestamp(date_float)
+
     # get_quote_quintuple:(time, open, close, high, low) (static)
     # param quoteDict:String => A single quote dictionary returned from get_history(...)['historicals'] in Query.
     # returns A quintuple containing (time, open, close, high, low).
@@ -132,12 +172,12 @@ class Utility:
         Utility.set_interval(sec, lambda: action(), time, None)
 
     # execute_between_times:Void
+    # param action:lambda Function => The function to execute on the secInterval before the time is reached.
     # param start_time:datetime|None => The datetime for the execution to begin.
     # param stop_time:datetime|None => The datetime for the execution to end.
-    # param action:lambda Function => The function to execute on the secInterval before the time is reached.
     # param sec:Integer => The number of seconds until the sleep condition is checked again.
     @staticmethod
-    def execute_between_times(start_time, stop_time, action, sec = 60):
+    def execute_between_times(action, start_time = None, stop_time = None, sec = 60):
         Utility.set_interval(sec, lambda: action(), start_time, stop_time)
 
     # set_interval:Timer
@@ -201,3 +241,84 @@ class Utility:
     def get_random_hex():
         rand = lambda: random.randint(0,255)
         return ('#%02X%02X%02X' % (rand(), rand(), rand()))
+
+    # merge_dicts:Dict
+    # param x:Dict => Arbitrary dictionary.
+    # param y:Dict => Arbitrary dictionary.
+    # returns Returns a new dictionary with contents of x and y merged.
+    @staticmethod
+    def merge_dicts(x, y):
+        z = x.copy()
+        z.update(y)
+        return z
+
+    # set_file_from_dict:Void
+    # param file_name:String => String name of the file to access.
+    # param dict:Dict => Dictionary to set into file.
+    @staticmethod
+    def set_file_from_dict(file_name, dict):
+        open(file_name, 'w').close()
+        file = open(file_name, "w")
+        for key, value in dict.items():
+            file.write(Utility.get_file_dict_string(key, value) + "\n")
+        file.close()
+
+    # set_in_file:Void
+    # param file_name:String => String name of the file to access.
+    # param key:String => Key to set in file.
+    # param value:String => Value to set in file.
+    @staticmethod
+    def set_in_file(file_name, key, value):
+        written = False
+        file = open(file_name, "r")
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if line.find(key, 0, line.find("=")) is not -1:
+                lines[i] = Utility.get_file_dict_string(key, value) + "\n"
+                written = True
+        file.close()
+        file = open(file_name, "w")
+        for line in lines:
+            file.write(line)
+        if not written:
+            file.write(Utility.get_file_dict_string(key, value) + "\n")
+        file.close()
+
+    # get_from_file:String
+    # param file_name:String => String name of the file to access.
+    # param key:String => Key to get from file.
+    # returns Returns the found value for the given key or None.
+    @staticmethod
+    def get_from_file(file_name, key):
+        file = open(file_name, "r")
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if line.find(key, 0, line.find("=")) is not -1:
+                file.close()
+                return line[line.find("=") + 1:len(line)]
+        file.close()
+        return None
+
+    # get_file_as_dict:Dict
+    # param file_name:String => String name of the file to access.
+    # param key:String => Key to get from file.
+    # returns Returns the found value for the given key or None.
+    @staticmethod
+    def get_file_as_dict(file_name):
+        file = open(file_name, "r")
+        file_dict = {}
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            key = line[0:line.find("=")]
+            value = line[line.find("=") + 1:len(line) - 1]
+            file_dict[key] = value
+        file.close()
+        return file_dict
+
+    # get_file_dict_string:String
+    # param key:String => Key to turn into string.
+    # param value:String => Value to turn into string.
+    # returns Returns a simple string structure for storing a key value pair in a file.
+    @staticmethod
+    def get_file_dict_string(key, value):
+        return key + "=" + value

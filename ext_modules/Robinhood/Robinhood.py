@@ -17,8 +17,8 @@ import six
 import dateutil
 
 #Application-specific imports
-from Robinhood import exceptions as RH_exception
-from Robinhood import endpoints
+from . import exceptions as RH_exception
+from . import endpoints
 
 class Bounds(Enum):
     """Enum for bounds in `historicals` endpoint """
@@ -210,8 +210,6 @@ class Robinhood:
 
         return data['results']
 
-    def stock_from_instrument_url(self, url):
-        return self.session.get(url, timeout=15).json()
 
     def quote_data(self, stock=''):
         """Fetch stock quote
@@ -232,7 +230,7 @@ class Robinhood:
 
         #Check for validity of symbol
         try:
-            req = requests.get(url, timeout=15)
+            req = self.session.get(url, timeout=15)
             req.raise_for_status()
             data = req.json()
         except requests.exceptions.HTTPError:
@@ -257,7 +255,7 @@ class Robinhood:
         url = str(endpoints.quotes()) + "?symbols=" + ",".join(stocks)
 
         try:
-            req = requests.get(url, timeout=15)
+            req = self.session.get(url, timeout=15)
             req.raise_for_status()
             data = req.json()
         except requests.exceptions.HTTPError:
@@ -625,6 +623,21 @@ class Robinhood:
         instrument_list = self.get_url(endpoints.tags(tag))["instruments"]
         return [self.get_url(instrument)["symbol"] for instrument in instrument_list]
 
+    @login_required
+    def get_transfers(self):
+        """Returns a page of list of transfers made to/from the Bank.
+
+        Note that this is a paginated response. The consumer will have to look
+        at 'next' key in the JSON and make a subsequent request for the next
+        page.
+
+            Returns:
+                (list): List of all transfers to/from the bank.
+        """
+        res = self.session.get(endpoints.ach('transfers'), timeout=15)
+        res.raise_for_status()
+        return res.json()
+
     ###########################################################################
     #                           GET OPTIONS INFO
     ###########################################################################
@@ -683,7 +696,7 @@ class Robinhood:
 
         #Check for validity of symbol
         try:
-            req = requests.get(url, timeout=15)
+            req = self.session.get(url, timeout=15)
             req.raise_for_status()
             data = req.json()
         except requests.exceptions.HTTPError:
@@ -691,6 +704,7 @@ class Robinhood:
 
 
         return data
+
 
     def fundamentals(self, stock=''):
         """Wrapper for get_fundamentlals function """
@@ -701,10 +715,6 @@ class Robinhood:
     ###########################################################################
     #                           PORTFOLIOS DATA
     ###########################################################################
-
-    def stock_portfolio(self):
-        positions = self.positions()['results'] or []
-        return list(map(lambda position: {**position, **self.session.get(position['instrument'], timeout=15).json()}, positions))
 
     def portfolios(self):
         """Returns the user's portfolio data """
@@ -1260,11 +1270,12 @@ class Robinhood:
         if(instrument_URL is None):
             if(symbol is None):
                 raise(ValueError('Neither instrument_URL nor symbol were passed to submit_order'))
-            instruments_LIST = self.instruments(symbol)
-            if len(instruments_LIST) > 0:
-                instrument_URL = self.instruments(symbol)[0]['url']
-            else:
-                raise(ValueError('The instrument likely does not exist'))
+            for result in self.instruments(symbol):
+                if result['symbol'].upper() == symbol.upper() :
+                    instrument_URL = result['url']
+                    break
+            if(instrument_URL is None):
+                raise(ValueError('instrument_URL could not be defined. Symbol %s not found' % symbol))
 
         if(symbol is None):
             symbol = self.session.get(instrument_URL, timeout=15).json()['symbol']
@@ -1297,7 +1308,7 @@ class Robinhood:
         if(trigger == 'stop'):
             if(stop_price is None):
                 raise(ValueError('Stop order has no stop_price in call to submit_order'))
-            if(price <= 0):
+            if(stop_price <= 0):
                 raise(ValueError('Stop_price must be positive number in call to submit_order'))
 
         if(stop_price is not None):
@@ -1340,6 +1351,8 @@ class Robinhood:
             if(value is not None):
                 payload[field] = value
 
+        print(payload)
+
         res = self.session.post(endpoints.orders(), data=payload, timeout=15)
         res.raise_for_status()
 
@@ -1351,38 +1364,55 @@ class Robinhood:
 
     def cancel_order(
             self,
-            order_id
-    ):
+            order_id):
         """
         Cancels specified order and returns the response (results from `orders` command).
         If order cannot be cancelled, `None` is returned.
-
         Args:
-            order_id (str): Order ID that is to be cancelled or order dict returned from
+            order_id (str or dict): Order ID string that is to be cancelled or open order dict returned from
             order get.
         Returns:
             (:obj:`requests.request`): result from `orders` put command
         """
-        if order_id is str:
+        if isinstance(order_id, str):
             try:
-                order = self.session.get(self.endpoints['orders'] + order_id, timeout=15).json()
+                order = self.session.get(endpoints.orders() + order_id, timeout=15).json()
             except (requests.exceptions.HTTPError) as err_msg:
                 raise ValueError('Failed to get Order for ID: ' + order_id
                     + '\n Error message: '+ repr(err_msg))
-        else:
-            raise ValueError('Cancelling orders requires a valid order_id string')
 
-        if order.get('cancel') is not None:
+            if order.get('cancel') is not None:
+                try:
+                    res = self.session.post(order['cancel'], timeout=15)
+                    res.raise_for_status()
+                    return res
+                except (requests.exceptions.HTTPError) as err_msg:
+                    raise ValueError('Failed to cancel order ID: ' + order_id
+                         + '\n Error message: '+ repr(err_msg))
+                    return None
+
+        if isinstance(order_id, dict):
+            order_id = order_id['id']
             try:
-                res = self.session.post(order['cancel'], timeout=15)
-                res.raise_for_status()
+                order = self.session.get(endpoints.orders() + order_id, timeout=15).json()
             except (requests.exceptions.HTTPError) as err_msg:
-                raise ValueError('Failed to cancel order ID: ' + order_id
-                     + '\n Error message: '+ repr(err_msg))
-                return None
+                raise ValueError('Failed to get Order for ID: ' + order_id
+                    + '\n Error message: '+ repr(err_msg))
+
+            if order.get('cancel') is not None:
+                try:
+                    res = self.session.post(order['cancel'], timeout=15)
+                    res.raise_for_status()
+                    return res
+                except (requests.exceptions.HTTPError) as err_msg:
+                    raise ValueError('Failed to cancel order ID: ' + order_id
+                         + '\n Error message: '+ repr(err_msg))
+                    return None
+
+        elif not isinstance(order_id, str) or not isinstance(order_id, dict):
+            raise ValueError('Cancelling orders requires a valid order_id string or open order dictionary')
+
 
         # Order type cannot be cancelled without a valid cancel link
         else:
             raise ValueError('Unable to cancel order ID: ' + order_id)
-
-        return res

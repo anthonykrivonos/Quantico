@@ -16,6 +16,7 @@ from utility import *
 from enums import *
 from algorithms import *
 from models import *
+from ml import *
 
 # Plotting
 import numpy as np
@@ -23,8 +24,9 @@ import numpy as np
 # Abstract: Main script to run algorithms from.
 
 #
-#   Driver
+#   Setup
 #
+
 # Load EMAIL and PASSWORD constants from .env
 dotenv = load_dotenv(join(dirname(__file__)+"/../", '.env'))
 EMAIL = os.getenv("EMAIL")
@@ -38,8 +40,14 @@ except Exception as e:
     Utility.error("Could not log in: " + str(e))
     sys.exit()
 
-my_port = query.user_portfolio()
-# their_port = Portfolio(query, [Quote("AAPL", 0), Quote("GOOG", 0)], "Cool Port")
+#
+#   Portfolio
+#
 
-# Run algorithm
-TopMoversNoDayTradesAlgorithm(query, my_port)
+my_port = query.user_portfolio()
+
+#
+#   Driver (Your Algorithms Here)
+#
+
+NoDayTradesAlgorithm(query, my_port, test=True, cash=1000)
