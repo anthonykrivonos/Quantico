@@ -4,7 +4,6 @@
 
 # Imports
 import sys
-sys.path.append('ext_modules')
 from datetime import date
 
 from Robinhood import Robinhood

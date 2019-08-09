@@ -1,3 +1,8 @@
 python-dotenv
 termcolor
 textblob
+mpl_finance
+pandas
+pandas_market_calendars
+scipy
+git+https://github.com/Jamonek/Robinhood.git

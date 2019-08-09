@@ -14,8 +14,9 @@ This project uses my fork of [Jamonek's](https://github.com/Jamonek/Robinhood) R
 
 1. Clone this repository.
 2. Open a terminal window and `cd` to the project.
-3. Install all required dependencies with `pip install -r requirements.txt`.
-4. Create a file called `.env` and fill it with your credentials:
+3. Upgrade your setup tools with `pip3 install --upgrade setuptools --user python`.
+4. Install all required dependencies with `pip3 install -r requirements.txt`.
+5. Create a file called `.env` and fill it with your credentials:
 
 ```
 EMAIL=yourEmail@probably.com

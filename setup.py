@@ -13,5 +13,14 @@ setup(
     author='Anthony Krivonos',
     author_email='info@anthonykrivonos.com',
     url='https://github.com/anthonykrivonos/Quantico',
-    packages=['python-dotenv', 'numpy', 'mpl_finance', 'pandas_market_calendars', 'termcolor']
+    packages=[
+        'python-dotenv',
+        'termcolor',
+        'textblob',
+        'mpl_finance',
+        'pandas',
+        'pandas_market_calendars',
+        'scipy',
+        'git+https://github.com/Jamonek/Robinhood.git'
+    ]
 )
